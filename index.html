@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Surgical Ward Tracker</title>
-<meta name="description" content="Ward-round tracker for a 54-bed male surgical ward">
+<meta name="description" content="Bed-based scan, theatre, referral and discharge tracker for a 54-bed male surgical ward">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ==========================================================================
@@ -51,7 +51,7 @@ h1,h2,h3,h4{margin:0;font-weight:700;color:var(--text);}
 p{margin:0;}
 button{font-family:inherit;}
 input,select,textarea{font-family:inherit;font-size:1rem;}
-::selection{background:var(--primary-bg);}
+[hidden]{display:none;}
 
 /* Layout */
 .topbar{
@@ -60,23 +60,23 @@ input,select,textarea{font-family:inherit;font-size:1rem;}
   position:sticky;top:0;z-index:20;
 }
 .topbar-left{display:flex;flex-direction:column;gap:2px;}
-.topbar-left h1{font-size:1.15rem;letter-spacing:-0.01em;}
-.date-display{font-size:0.78rem;color:var(--text-muted);}
+.topbar-left h1{font-size:1.1rem;letter-spacing:-0.01em;}
+.date-display{font-size:0.76rem;color:var(--text-muted);}
 .topbar-right{display:flex;align-items:center;gap:8px;}
 .demo-badge{
-  background:var(--orange-bg);color:var(--orange);font-weight:700;font-size:0.7rem;
+  background:var(--orange-bg);color:var(--orange);font-weight:700;font-size:0.68rem;
   padding:4px 8px;border-radius:6px;letter-spacing:0.03em;
 }
 .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;}
 .conn-dot.off{background:var(--red);}
 
 .mainnav{
-  display:flex;gap:4px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);
-  position:sticky;top:56px;z-index:19;overflow-x:auto;
+  display:flex;gap:2px;padding:6px 8px;background:var(--card);border-bottom:1px solid var(--border);
+  position:sticky;top:53px;z-index:19;overflow-x:auto;
 }
 .nav-btn{
-  flex:1 1 auto;white-space:nowrap;background:none;border:none;padding:10px 12px;border-radius:8px;
-  font-size:0.88rem;font-weight:600;color:var(--text-muted);cursor:pointer;min-height:40px;
+  flex:1 1 auto;white-space:nowrap;background:none;border:none;padding:8px 6px;border-radius:8px;
+  font-size:0.76rem;font-weight:600;color:var(--text-muted);cursor:pointer;min-height:38px;
 }
 .nav-btn.active{background:var(--primary-bg);color:var(--primary);}
 .nav-btn .nav-count{
@@ -84,43 +84,34 @@ input,select,textarea{font-family:inherit;font-size:1rem;}
   font-size:0.65rem;font-weight:700;border-radius:8px;padding:1px 5px;
 }
 .nav-btn .nav-count[hidden]{display:none;}
-[hidden]{display:none;}
-
-@media(max-width:480px){
-  .topbar{padding:10px 12px;}
-  .topbar-left h1{font-size:1rem;}
-  .mainnav{padding:6px 6px;gap:2px;}
-  .nav-btn{padding:8px 4px;font-size:0.72rem;min-height:36px;}
-  main{padding:10px;}
-  .bed-card{min-width:100px;min-height:88px;}
-}
 
 main{max-width:1200px;margin:0 auto;padding:14px;}
 .view{display:none;}
 .view.active{display:block;}
 
+.info-banner{
+  background:var(--primary-bg);color:var(--primary);border-radius:var(--radius);padding:10px 14px;
+  font-size:0.82rem;font-weight:600;margin-bottom:12px;
+}
+.info-banner.off{background:var(--grey-bg);color:var(--text-muted);}
+
 /* Summary bar */
-.summary-bar{
-  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;
-}
-@media(min-width:700px){.summary-bar{grid-template-columns:repeat(5,1fr);}}
-.summary-tile{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:10px 12px;text-align:left;
-}
-.summary-tile .num{font-size:1.4rem;font-weight:800;line-height:1.1;}
-.summary-tile .lbl{font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
+.summary-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(min-width:760px){.summary-bar{grid-template-columns:repeat(6,1fr);}}
+.summary-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;text-align:left;}
+.summary-tile .num{font-size:1.35rem;font-weight:800;line-height:1.1;}
+.summary-tile .lbl{font-size:0.68rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
 .summary-tile.occ .num{color:var(--primary);}
 .summary-tile.empty .num{color:var(--grey);}
-.summary-tile.jobs .num{color:var(--red);}
+.summary-tile.scan .num{color:var(--blue);}
 .summary-tile.theatre .num{color:var(--purple);}
+.summary-tile.ref .num{color:var(--orange);}
 .summary-tile.disch .num{color:var(--green);}
 
 /* Controls bar */
 .controls-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;}
 .controls-bar input[type=search],.controls-bar select{
-  flex:1 1 160px;padding:10px 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--card);
-  min-height:42px;
+  flex:1 1 160px;padding:10px 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--card);min-height:42px;
 }
 .controls-bar input[type=search]{flex:2 1 220px;}
 
@@ -128,15 +119,14 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card);
-  color:var(--text);font-weight:600;font-size:0.88rem;cursor:pointer;min-height:42px;
+  color:var(--text);font-weight:600;font-size:0.86rem;cursor:pointer;min-height:42px;
 }
 .btn:active{transform:scale(0.98);}
 .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff;}
-.btn-primary:hover{background:var(--primary-dark);}
 .btn-ghost{background:transparent;border-color:transparent;}
 .btn-danger{background:var(--red-bg);border-color:var(--red-bg);color:var(--red);}
 .btn-success{background:var(--green-bg);border-color:var(--green-bg);color:var(--green);}
-.btn-sm{padding:6px 10px;font-size:0.8rem;min-height:34px;}
+.btn-sm{padding:6px 10px;font-size:0.78rem;min-height:34px;}
 .btn-block{width:100%;}
 .btn-link{background:none;border:none;color:var(--primary);font-weight:600;cursor:pointer;padding:2px 4px;font-size:0.85rem;}
 .btn[disabled]{opacity:0.5;cursor:not-allowed;}
@@ -145,111 +135,70 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 .ward-grid{display:grid;gap:8px;overflow-x:auto;padding-bottom:8px;}
 .bed-card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:8px 9px;min-width:118px;min-height:98px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
-  box-shadow:var(--shadow);position:relative;
+  padding:8px 9px;min-width:104px;min-height:82px;cursor:pointer;display:flex;flex-direction:column;gap:4px;
+  box-shadow:var(--shadow);
 }
 .bed-card:active{transform:scale(0.98);}
 .bed-card.empty{background:var(--grey-bg);border-style:dashed;justify-content:center;align-items:center;text-align:center;}
-.bed-card .bed-label{font-size:0.68rem;font-weight:800;color:var(--text-muted);letter-spacing:0.04em;}
+.bed-card .bed-label{font-size:0.74rem;font-weight:800;color:var(--text-muted);letter-spacing:0.04em;}
 .bed-card .bed-zone{font-size:0.6rem;color:var(--text-faint);}
-.bed-card .bed-patient-name{font-size:0.9rem;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bed-card .bed-diagnosis{font-size:0.74rem;color:var(--text-muted);line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.bed-card .bed-empty-text{font-size:0.72rem;font-weight:700;color:var(--text-faint);letter-spacing:0.05em;}
-.bed-card .bed-add{font-size:0.72rem;color:var(--primary);font-weight:700;}
+.bed-card .bed-empty-text{font-size:0.7rem;font-weight:700;color:var(--text-faint);letter-spacing:0.05em;}
+.bed-card .bed-add{font-size:0.7rem;color:var(--primary);font-weight:700;}
 .bed-card.dimmed{opacity:0.32;}
 .bed-card.match{outline:2px solid var(--primary);}
 .bed-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;}
-.badge{
-  font-size:0.62rem;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:0.02em;white-space:nowrap;
-}
+.badge{font-size:0.6rem;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:0.02em;white-space:nowrap;}
 .badge-theatre{background:var(--purple-bg);color:var(--purple);}
-.badge-discharge{background:var(--green-bg);color:var(--green);}
-.badge-preop{background:var(--blue-bg);color:var(--blue);}
-.badge-postop{background:var(--blue-bg);color:var(--blue);}
-.badge-pod{background:var(--grey-bg);color:var(--text);}
+.badge-scan{background:var(--blue-bg);color:var(--blue);}
 .badge-referral{background:var(--orange-bg);color:var(--orange);}
-.badge-jobs{background:var(--red-bg);color:var(--red);}
-.badge-critical{background:var(--red-bg);color:var(--red);}
+.badge-discharge{background:var(--green-bg);color:var(--green);}
 
 /* Cards / lists generic */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
 .card h3{font-size:0.95rem;margin-bottom:8px;}
-.list-row{
-  display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);
-}
-.list-row:last-child{border-bottom:none;}
 .empty-state{color:var(--text-faint);font-size:0.88rem;padding:14px 4px;text-align:center;}
 
-/* Jobs / theatre / discharge rows */
-.job-row,.theatre-row,.discharge-row{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;
-}
-.job-row.done{opacity:0.6;}
-.row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.item-row{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;}
+.item-row.done{opacity:0.55;}
+.row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
 .row-bed-tag{font-size:0.7rem;font-weight:800;color:var(--primary);background:var(--primary-bg);padding:2px 7px;border-radius:6px;}
-.row-title{font-weight:700;font-size:0.95rem;margin:4px 0 2px;}
-.row-sub{font-size:0.8rem;color:var(--text-muted);}
+.row-title{font-weight:700;font-size:0.92rem;margin:4px 0 2px;}
+.row-sub{font-size:0.79rem;color:var(--text-muted);}
 .row-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.stage-track{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;}
+.stage-pip{font-size:0.65rem;font-weight:700;padding:3px 8px;border-radius:12px;background:var(--grey-bg);color:var(--text-faint);}
+.stage-pip.active{background:var(--primary-bg);color:var(--primary);}
+.stage-pip.done{background:var(--green-bg);color:var(--green);}
 
-/* Patient page */
-.patient-header{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
-.patient-header .back-row{margin-bottom:8px;}
-.patient-bed{font-size:0.78rem;font-weight:800;color:var(--primary);letter-spacing:0.04em;}
-.patient-header h2{font-size:1.4rem;margin:2px 0 4px;}
-.patient-diagnosis-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
-.patient-diagnosis-row span{font-size:1rem;color:var(--text);font-weight:600;}
-.status-pill{
-  display:inline-block;font-size:0.72rem;font-weight:800;padding:4px 10px;border-radius:20px;
-  background:var(--primary-bg);color:var(--primary);letter-spacing:0.03em;text-transform:uppercase;
-}
-.patient-badges{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
-.patient-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+/* Bed workspace page */
+.bed-header{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.bed-header .back-row{margin-bottom:8px;}
+.bed-header h2{font-size:1.5rem;margin:2px 0 4px;}
+.bed-header .since{font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;}
+.bed-badges-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.bed-header .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
 
-.tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;border-bottom:1px solid var(--border);}
-.tab-btn{
-  background:none;border:none;padding:10px 12px;font-size:0.83rem;font-weight:600;color:var(--text-muted);
-  cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;
-}
-.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+.section-title{font-size:0.95rem;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
 
 /* Forms */
 .form-group{margin-bottom:12px;}
 .form-group label{display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;}
-.form-group input[type=text],.form-group input[type=number],.form-group input[type=date],
-.form-group input[type=time],.form-group input[type=datetime-local],.form-group select,.form-group textarea{
+.form-group input[type=text],.form-group input[type=date],.form-group select,.form-group textarea{
   width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;min-height:42px;
 }
-.form-group textarea{min-height:84px;resize:vertical;}
+.form-group textarea{min-height:70px;resize:vertical;}
 .form-row{display:flex;gap:10px;}
 .form-row .form-group{flex:1;}
-.checkbox-row{display:flex;align-items:center;gap:10px;padding:8px 0;}
-.checkbox-row input[type=checkbox]{width:20px;height:20px;flex-shrink:0;}
-.checkbox-row label{font-size:0.88rem;font-weight:600;color:var(--text);}
 .yesno{display:flex;gap:8px;}
 .yesno button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-strong);background:#fff;font-weight:700;cursor:pointer;min-height:42px;}
 .yesno button.active-yes{background:var(--green-bg);border-color:var(--green);color:var(--green);}
 .yesno button.active-no{background:var(--grey-bg);border-color:var(--border-strong);color:var(--text-muted);}
-.hint{font-size:0.74rem;color:var(--text-faint);margin-top:3px;}
-
-/* Checklist */
-.checklist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
-.checklist-item:last-child{border-bottom:none;}
-.checklist-item input{width:22px;height:22px;flex-shrink:0;}
-.checklist-item span{font-size:0.9rem;font-weight:600;}
 
 /* Modal */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(15,23,42,0.5);display:none;align-items:flex-end;justify-content:center;z-index:100;
-}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.5);display:none;align-items:flex-end;justify-content:center;z-index:100;}
 .modal-overlay.open{display:flex;}
-.modal-box{
-  background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;
-  padding:18px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);
-}
-@media(min-width:640px){
-  .modal-overlay{align-items:center;}
-  .modal-box{border-radius:14px;margin:20px;}
-}
+.modal-box{background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:18px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);}
+@media(min-width:640px){.modal-overlay{align-items:center;} .modal-box{border-radius:14px;margin:20px;}}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
 .modal-header h3{font-size:1.05rem;}
 .modal-close{background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--text-muted);padding:4px 8px;}
@@ -262,31 +211,23 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 .toast.error{background:var(--red);}
 .toast.success{background:var(--green);}
 
-/* Move/swap bed picker */
-.bedpicker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:340px;overflow-y:auto;padding:4px;}
-.bedpick{
-  border:1px solid var(--border-strong);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;background:#fff;font-size:0.72rem;font-weight:700;
-}
-.bedpick.occupied{background:var(--primary-bg);color:var(--primary);}
-.bedpick.current{background:var(--grey-bg);color:var(--text-faint);cursor:not-allowed;}
-.bedpick.empty{background:var(--green-bg);color:var(--green);}
-
 /* Settings */
-.settings-section{margin-bottom:20px;}
-.staff-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;}
-.staff-role-tag{font-size:0.68rem;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--grey-bg);color:var(--text-muted);}
 .layout-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
 .layout-table th{text-align:left;padding:6px 4px;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;border-bottom:1px solid var(--border);}
 .layout-table td{padding:5px 4px;border-bottom:1px solid var(--border);}
 .layout-table input{width:100%;padding:6px 7px;border:1px solid var(--border-strong);border-radius:6px;min-height:34px;}
 .layout-scroll{max-height:460px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;}
-
-.section-title{font-size:0.95rem;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
 .muted{color:var(--text-muted);}
 .small{font-size:0.78rem;}
-.timeline-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:0.84rem;}
-.timeline-item:last-child{border-bottom:none;}
-.timeline-time{font-weight:700;color:var(--primary);margin-right:6px;}
+
+@media(max-width:480px){
+  .topbar{padding:10px 12px;}
+  .topbar-left h1{font-size:0.98rem;}
+  .mainnav{padding:5px 5px;gap:1px;}
+  .nav-btn{padding:7px 3px;font-size:0.68rem;min-height:34px;}
+  main{padding:10px;}
+  .bed-card{min-width:92px;min-height:76px;}
+}
 </style>
 </head>
 <body>
@@ -304,8 +245,9 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 
 <nav class="mainnav" id="main-nav">
   <button class="nav-btn active" data-view="ward">Ward</button>
-  <button class="nav-btn" data-view="jobs">Jobs<span class="nav-count" id="nav-jobs-count" hidden>0</span></button>
-  <button class="nav-btn" data-view="theatre">Theatre</button>
+  <button class="nav-btn" data-view="scans">Scans<span class="nav-count" id="nav-scans-count" hidden>0</span></button>
+  <button class="nav-btn" data-view="theatre">Theatre<span class="nav-count" id="nav-theatre-count" hidden>0</span></button>
+  <button class="nav-btn" data-view="referrals">Referrals<span class="nav-count" id="nav-referrals-count" hidden>0</span></button>
   <button class="nav-btn" data-view="discharges">Discharges</button>
   <button class="nav-btn" data-view="settings">Settings</button>
 </nav>
@@ -316,103 +258,102 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
   <section class="view active" id="view-ward">
     <div class="summary-bar" id="ward-summary"></div>
     <div class="controls-bar">
-      <input type="search" id="ward-search" placeholder="Search name, bed, diagnosis, BHT...">
+      <input type="search" id="ward-search" placeholder="Search bed number...">
       <select id="ward-filter">
         <option value="all">All</option>
         <option value="occupied">Occupied</option>
         <option value="empty">Empty</option>
-        <option value="theatre">Theatre today</option>
+        <option value="scan">Scan pending</option>
+        <option value="theatre">Theatre pending</option>
+        <option value="referral">Referral pending</option>
         <option value="discharge">For discharge</option>
-        <option value="preop">Pre-op</option>
-        <option value="postop">Post-op</option>
       </select>
-      <button class="btn btn-primary" id="btn-new-admission">+ New Admission</button>
     </div>
     <div class="ward-grid" id="ward-grid"></div>
   </section>
 
-  <!-- ============================== JOBS VIEW ============================== -->
-  <section class="view" id="view-jobs">
-    <div class="controls-bar">
-      <input type="search" id="jobs-search" placeholder="Search jobs, patient, bed...">
-      <select id="jobs-filter">
-        <option value="outstanding" selected>Outstanding</option>
-        <option value="done">Done</option>
-        <option value="all">All</option>
-      </select>
-    </div>
-    <div id="jobs-list"></div>
+  <!-- ============================== SCANS VIEW ============================== -->
+  <section class="view" id="view-scans">
+    <div class="info-banner" id="scan-banner">USS slot: 8:00 AM – 12:00 PM daily. Flag in the HO round, confirm in SHO round, sign off in the consultant round, then mark Sent.</div>
+    <div id="scans-list"></div>
   </section>
 
   <!-- ============================== THEATRE VIEW ============================== -->
   <section class="view" id="view-theatre">
-    <h2 class="section-title">Theatre today</h2>
-    <div id="theatre-list"></div>
+    <div class="info-banner" id="theatre-banner"></div>
+    <h2 class="section-title">Routine theatre list (Mon / Wed / Fri)</h2>
+    <div id="routine-list"></div>
+    <h2 class="section-title" style="margin-top:18px;">Casualty theatre (today)</h2>
+    <div id="casualty-list"></div>
+  </section>
+
+  <!-- ============================== REFERRALS VIEW ============================== -->
+  <section class="view" id="view-referrals">
+    <div id="referrals-list"></div>
   </section>
 
   <!-- ============================== DISCHARGES VIEW ============================== -->
   <section class="view" id="view-discharges">
-    <h2 class="section-title">For discharge</h2>
+    <h2 class="section-title">Marked for discharge today</h2>
     <div id="discharges-list"></div>
   </section>
 
   <!-- ============================== SETTINGS VIEW ============================== -->
   <section class="view" id="view-settings">
-    <div class="settings-section">
-      <div class="card">
-        <div class="section-title">Connection</div>
-        <p class="small muted" id="settings-conn-info"></p>
-      </div>
+    <div class="card">
+      <div class="section-title">Connection</div>
+      <p class="small muted" id="settings-conn-info"></p>
     </div>
-    <div class="settings-section">
-      <div class="card">
-        <div class="section-title">Ward Team <button class="btn btn-sm btn-primary" id="btn-add-staff">+ Add doctor</button></div>
-        <div id="staff-list"></div>
-      </div>
-    </div>
-    <div class="settings-section">
-      <div class="card">
-        <div class="section-title">Ward Layout <button class="btn btn-sm btn-primary" id="btn-save-layout">Save Layout</button></div>
-        <p class="small muted" style="margin-bottom:10px;">Set the row, column and zone for each bed so the ward map matches the real ward. Leave gaps in numbering for aisles, entrances or the nurses' station.</p>
-        <div class="layout-scroll">
-          <table class="layout-table">
-            <thead><tr><th>Bed</th><th>Row</th><th>Column</th><th>Zone</th></tr></thead>
-            <tbody id="layout-table-body"></tbody>
-          </table>
-        </div>
+    <div class="card">
+      <div class="section-title">Ward Layout <button class="btn btn-sm btn-primary" id="btn-save-layout">Save Layout</button></div>
+      <p class="small muted" style="margin-bottom:10px;">Set the row, column and zone for each bed so the ward map matches the real ward. Leave gaps in numbering for aisles, entrances or the nurses' station.</p>
+      <div class="layout-scroll">
+        <table class="layout-table">
+          <thead><tr><th>Bed</th><th>Row</th><th>Column</th><th>Zone</th></tr></thead>
+          <tbody id="layout-table-body"></tbody>
+        </table>
       </div>
     </div>
   </section>
 
-  <!-- ============================== PATIENT VIEW ============================== -->
-  <section class="view" id="view-patient">
+  <!-- ============================== BED WORKSPACE VIEW ============================== -->
+  <section class="view" id="view-bed">
     <div class="back-row">
       <button class="btn btn-ghost btn-sm" id="btn-back-to-ward">&larr; Back to ward</button>
     </div>
-    <div class="patient-header">
-      <div class="patient-bed" id="pv-bed"></div>
-      <h2 id="pv-name"></h2>
-      <div class="patient-diagnosis-row">
-        <span id="pv-diagnosis"></span>
-        <button class="btn-link" id="btn-edit-diagnosis">edit</button>
-      </div>
-      <span class="status-pill" id="pv-status"></span>
-      <div class="patient-badges" id="pv-badges"></div>
-      <div class="patient-actions">
-        <button class="btn" id="btn-edit-patient">Edit patient</button>
-        <button class="btn" id="btn-move-patient">Move / swap bed</button>
+    <div class="bed-header">
+      <h2 id="bw-label"></h2>
+      <div class="since" id="bw-since"></div>
+      <div class="bed-badges-row" id="bw-badges"></div>
+      <div class="actions">
+        <button class="btn btn-danger" id="btn-vacate-bed">Mark Bed Empty</button>
       </div>
     </div>
-    <div class="tabs" id="patient-tabs">
-      <button class="tab-btn active" data-tab="overview">Overview</button>
-      <button class="tab-btn" data-tab="rounds">Rounds</button>
-      <button class="tab-btn" data-tab="referrals">Referrals</button>
-      <button class="tab-btn" data-tab="investigations">Investigations</button>
-      <button class="tab-btn" data-tab="theatre">Theatre / Pre-op</button>
-      <button class="tab-btn" data-tab="postop">Post-op / Devices</button>
-      <button class="tab-btn" data-tab="discharge">Discharge / Transfer</button>
+
+    <div class="card">
+      <div class="section-title">Scan requests <button class="btn btn-sm btn-primary" id="bw-add-scan">+ Request scan</button></div>
+      <div id="bw-scans"></div>
     </div>
-    <div id="patient-tab-content"></div>
+
+    <div class="card">
+      <div class="section-title">Routine theatre <span></span></div>
+      <div id="bw-routine"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Casualty theatre <span></span></div>
+      <div id="bw-casualty"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Referrals <button class="btn btn-sm btn-primary" id="bw-add-referral">+ Add referral</button></div>
+      <div id="bw-referrals"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Discharge today?</div>
+      <div class="yesno"><button id="bw-disc-yes">YES</button><button id="bw-disc-no">NO</button></div>
+    </div>
   </section>
 
 </main>
@@ -432,77 +373,51 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 
 <script>
 /* ============================================================================
-   JavaScript is organized into the sections below (per project convention):
-   Configuration / State / DB abstraction / Data loading / Ward rendering /
-   Patient rendering / Rounds / Jobs / Referrals / Investigations / Theatre /
-   Discharge / Settings / Utility functions
+   Sections: Configuration / State / Utility / DB abstraction / Data loading /
+   Ward rendering / Bed workspace / Scans / Theatre / Referrals / Discharges /
+   Settings / Navigation & init
    ============================================================================ */
+
 // ============================================================================
 // CONFIGURATION
 // Replace these two values with your own Supabase project's URL and
 // publishable (anon) key. Find them in Supabase: Project Settings -> API.
 // Never put your service_role key here — see README.md.
 // ============================================================================
-const SUPABASE_URL = "https://knhzdjbleeggdmhnpdnb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1o3a9qb3SdWcht6IpKvcpg_v6_b8YbP";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
 
 const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_KEY &&
   SUPABASE_URL.indexOf("YOUR_SUPABASE") === -1 &&
   SUPABASE_KEY.indexOf("YOUR_SUPABASE") === -1 &&
   SUPABASE_URL.indexOf("supabase.co") !== -1);
-
-// Becomes true only once a Supabase client has actually been created
-// successfully in initApp(). Everything else (DB abstraction, realtime)
-// checks this runtime flag rather than the static config check above, so a
-// failed connection always falls back cleanly to demo mode.
 let USE_SUPABASE = false;
 
 const TOTAL_BEDS = 54;
-const LOCAL_KEY = "wardTrackerDemoDB_v1";
+const LOCAL_KEY = "wardTrackerDemoDB_v2";
+const TABLES = ["beds","scans","theatre_listings","referrals"];
 
-const ROUND_TYPES = ["Morning SHO Round","Morning Consultant Round","Night SHO Round"];
-const PATIENT_STATUSES = ["New admission","Conservative","Pre-op","Post-op","For discharge","Critical","Discharged","Transferred"];
-const JOB_CATEGORIES = ["General","Blood","Imaging","Referral","Procedure","Medication","Documentation","Discharge","Theatre","Review","Nursing instruction","Other"];
-const REFERRAL_TYPES = ["In-house referral","Outpatient referral","Clinic referral"];
-const REFERRAL_SPECIALTIES = {
-  "In-house referral": ["Medical","Orthopaedic","ENT","Eye","Dermatology","Chest / Respiratory","Rheumatology","Cardiology","Other"],
-  "Outpatient referral": ["GU","GI","Neurology","Other"],
-  "Clinic referral": ["GU","GI","Neurology","Other"]
-};
-const REFERRAL_STATUSES = ["Requested","Informed","Seen","Completed"];
-const INVESTIGATION_CATEGORIES = ["Blood","X-ray","Ultrasound","Other"];
-const INVESTIGATION_PRESETS = {
-  "Blood": ["FBC","CRP","Serum electrolytes","Creatinine","Troponin I","Blood culture","LFT","Coagulation profile","Group & crossmatch","Other"],
-  "X-ray": ["Chest","Abdomen","KUB","Pelvis","Limb","Other"],
-  "Ultrasound": ["Abdomen","KUB","Hepatobiliary","Doppler","Other"],
-  "Other": ["CT","MRI","Echocardiogram","ECG","Sputum","Sputum culture","Urine UFR","Urine culture","Other"]
-};
-const INVESTIGATION_STATUSES = ["Requested","Booked","Done","Reviewed"];
-const DEVICE_TYPES = ["Drain","NG tube","IDC","Chest tube","Central line","Stoma","Other"];
-const ANESTHESIA_MODES = ["Not decided","GA","SA","LA","Regional","Other"];
-const PREOP_ITEMS = ["NBM","Consent","Anaesthetic review","Required investigations completed","Blood arranged / crossmatched","Imaging available","Referral clearance if required"];
-const TRANSFER_DESTINATIONS = ["ICU","HDU","Another ward","Another hospital","Other"];
-const TRANSFER_STATUSES = ["Pending","Accepted","Transferred"];
+const SCAN_TYPES = ["USS","X-ray","CT","Other"];
+const SCAN_STAGES = ["HO flagged","SHO confirmed","Consultant signed","Sent"];
+const ANESTHESIA_MODES = ["Not decided","Local / Block","Spinal","General","Other"];
+const THEATRE_STAGES = ["HO flagged","SHO confirmed","Consultant signed"];
+const REFERRAL_SPECIALTIES = ["Medical","Orthopaedic","ENT","Eye","Dermatology","Chest / Respiratory","Rheumatology","Cardiology","GU","GI","Neurology","Other"];
+const REFERRAL_STAGES = ["Suggested","Consultant signed","Called"];
+const WEEKDAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const ROUTINE_THEATRE_DAYS = [1,3,5]; // Mon, Wed, Fri
 
 // ============================================================================
 // STATE
 // ============================================================================
 const state = {
   beds: [],
-  staff: [],
-  patients: [],       // active patients only
-  tasks: [],
+  scans: [],
+  theatreListings: [],
   referrals: [],
-  investigations: [],
-  devices: [],
-  rounds: [],
   currentView: "ward",
-  currentPatientId: null,
-  currentPatientTab: "overview",
+  currentBedId: null,
   wardSearch: "",
   wardFilter: "all",
-  jobsSearch: "",
-  jobsFilter: "outstanding",
   loaded: false
 };
 
@@ -519,7 +434,6 @@ function esc(s){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
   });
 }
-
 function uuid(){
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
@@ -527,26 +441,11 @@ function uuid(){
     return v.toString(16);
   });
 }
-
 function nowIso(){ return new Date().toISOString(); }
-
 function todayDateStr(){
   const d = new Date();
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
-
-function nowTimeStr(){
-  const d = new Date();
-  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
-}
-
-function fmtDate(d){
-  if (!d) return "";
-  const dt = new Date(d);
-  if (isNaN(dt)) return "";
-  return dt.toLocaleDateString("en-GB", {day:"2-digit", month:"short"});
-}
-
 function fmtDateTime(d){
   if (!d) return "";
   const dt = new Date(d);
@@ -554,27 +453,12 @@ function fmtDateTime(d){
   return dt.toLocaleDateString("en-GB", {day:"2-digit", month:"short"}) + " " +
     dt.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
 }
-
-function fmtTime(d){
+function fmtDate(d){
   if (!d) return "";
-  const dt = new Date(d);
+  const dt = new Date(d + "T00:00:00");
   if (isNaN(dt)) return "";
-  return dt.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
+  return dt.toLocaleDateString("en-GB", {day:"2-digit", month:"short", weekday:"short"});
 }
-
-function daysBetween(dateStrEarlier, dateStrLater){
-  const a = new Date(dateStrEarlier + "T00:00:00");
-  const b = new Date(dateStrLater + "T00:00:00");
-  if (isNaN(a) || isNaN(b)) return null;
-  return Math.round((b - a) / 86400000);
-}
-
-function podFor(patient){
-  if (!patient.operation_date) return null;
-  const n = daysBetween(patient.operation_date, todayDateStr());
-  return n === null ? null : Math.max(n, 0);
-}
-
 function showToast(msg, type){
   const c = document.getElementById("toast-container");
   const el = document.createElement("div");
@@ -584,52 +468,30 @@ function showToast(msg, type){
   setTimeout(function(){ el.style.opacity = "0"; el.style.transition = "opacity 0.3s"; }, 2600);
   setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
 }
-
 function friendlyError(error){
   if (!error) return "Something went wrong.";
   const msg = error.message || String(error);
-  if (msg.indexOf("patients_active_bed_unique") !== -1) return "That bed is already occupied.";
+  if (msg.indexOf("theatre_open_unique") !== -1) return "That bed already has an open listing of this type. Update the existing one instead.";
   if (msg.indexOf("duplicate key") !== -1) return "That record already exists.";
   return msg;
 }
-
 function byId(arr, id){ return arr.find(function(x){ return x.id === id; }); }
+function bedByLabelOrId(id){ return byId(state.beds, id); }
 
-function bedLabel(bedId){
-  const b = byId(state.beds, bedId);
-  return b ? b.label : "?";
-}
+function bedScans(bedId){ return state.scans.filter(function(s){ return s.bed_id === bedId; }); }
+function bedTheatre(bedId, type){ return state.theatreListings.filter(function(t){ return t.bed_id === bedId && t.list_type === type; }); }
+function bedReferrals(bedId){ return state.referrals.filter(function(r){ return r.bed_id === bedId; }); }
 
-function patientTasks(patientId){
-  return state.tasks.filter(function(t){ return t.patient_id === patientId; });
-}
-function patientReferrals(patientId){
-  return state.referrals.filter(function(r){ return r.patient_id === patientId; });
-}
-function patientInvestigations(patientId){
-  return state.investigations.filter(function(i){ return i.patient_id === patientId; });
-}
-function patientDevices(patientId){
-  return state.devices.filter(function(d){ return d.patient_id === patientId; });
-}
-function patientRounds(patientId){
-  return state.rounds.filter(function(r){ return r.patient_id === patientId; })
-    .sort(function(a,b){ return new Date(b.round_at) - new Date(a.round_at); });
-}
-function pendingTaskCount(patientId){
-  return patientTasks(patientId).filter(function(t){ return t.status === "Pending"; }).length;
-}
-function pendingReferralCount(patientId){
-  return patientReferrals(patientId).filter(function(r){ return r.status !== "Completed"; }).length;
-}
+function openScanCount(bedId){ return bedScans(bedId).filter(function(s){ return !s.completed_at; }).length; }
+function openTheatreCount(bedId){ return state.theatreListings.filter(function(t){ return t.bed_id === bedId && !t.completed_at; }).length; }
+function openReferralCount(bedId){ return bedReferrals(bedId).filter(function(r){ return !r.completed_at; }).length; }
+
+function isRoutineTheatreDayToday(){ return ROUTINE_THEATRE_DAYS.indexOf(new Date().getDay()) !== -1; }
+function stageIndex(stages, stage){ return stages.indexOf(stage); }
 
 // ============================================================================
 // DB ABSTRACTION (Supabase or localStorage demo mode)
-// Every function returns a promise resolving to {data, error} so calling
-// code never has to branch on which backend is active.
 // ============================================================================
-const TABLES = ["beds","staff","patients","rounds","tasks","referrals","investigations","devices"];
-
 let localDB = null;
 function loadLocalDB(){
   try {
@@ -649,7 +511,7 @@ function seedLocalBeds(){
   for (let i=1;i<=TOTAL_BEDS;i++){
     const row = Math.floor((i-1)/6)+1;
     const col = ((i-1)%6)+1;
-    beds.push({ id: uuid(), label: String(i), row_no: row, col_no: col, zone: "Main ward", created_at: nowIso() });
+    beds.push({ id: uuid(), label: String(i), row_no: row, col_no: col, zone: "Main ward", occupied:false, occupied_since:null, for_discharge:false, discharge_marked_at:null, created_at: nowIso() });
   }
   localDB.beds = beds;
 }
@@ -660,7 +522,6 @@ const DB = {
     if (USE_SUPABASE){
       let q = supabaseClient.from(table).select("*");
       if (opts.eq) for (const k in opts.eq) q = q.eq(k, opts.eq[k]);
-      if (opts.in) q = q.in(opts.in.col, opts.in.vals.length ? opts.in.vals : ["__none__"]);
       if (opts.order) q = q.order(opts.order.col, {ascending: opts.order.asc !== false});
       const res = await q;
       return { data: res.data || [], error: res.error };
@@ -669,7 +530,6 @@ const DB = {
       if (opts.eq) rows = rows.filter(function(r){
         return Object.keys(opts.eq).every(function(k){ return r[k] === opts.eq[k]; });
       });
-      if (opts.in) rows = rows.filter(function(r){ return opts.in.vals.indexOf(r[opts.in.col]) !== -1; });
       if (opts.order) rows.sort(function(a,b){
         const av = a[opts.order.col], bv = b[opts.order.col];
         if (av < bv) return opts.order.asc === false ? 1 : -1;
@@ -687,6 +547,13 @@ const DB = {
       const res = await supabaseClient.from(table).insert(record).select().single();
       return { data: res.data, error: res.error };
     } else {
+      // Emulate the theatre_open_unique partial unique index in demo mode.
+      if (table === "theatre_listings" && !record.completed_at){
+        const clash = localDB.theatre_listings.find(function(t){
+          return t.bed_id === record.bed_id && t.list_type === record.list_type && !t.completed_at;
+        });
+        if (clash) return { data: null, error: { message: "theatre_open_unique: duplicate open listing" } };
+      }
       localDB[table].push(record);
       saveLocalDB();
       return { data: record, error: null };
@@ -716,6 +583,16 @@ const DB = {
       saveLocalDB();
       return { data: null, error: null };
     }
+  },
+  async removeWhere(table, field, value){
+    if (USE_SUPABASE){
+      const res = await supabaseClient.from(table).delete().eq(field, value);
+      return { data: res.data, error: res.error };
+    } else {
+      localDB[table] = localDB[table].filter(function(r){ return r[field] !== value; });
+      saveLocalDB();
+      return { data: null, error: null };
+    }
   }
 };
 
@@ -728,38 +605,18 @@ async function loadAll(){
     if (bedsRes.error) throw bedsRes.error;
     state.beds = bedsRes.data;
 
-    const staffRes = await DB.select("staff", { order: { col: "name" } });
-    if (staffRes.error) throw staffRes.error;
-    state.staff = staffRes.data;
+    const [scansRes, theatreRes, refRes] = await Promise.all([
+      DB.select("scans"),
+      DB.select("theatre_listings"),
+      DB.select("referrals")
+    ]);
+    if (scansRes.error) throw scansRes.error;
+    if (theatreRes.error) throw theatreRes.error;
+    if (refRes.error) throw refRes.error;
+    state.scans = scansRes.data;
+    state.theatreListings = theatreRes.data;
+    state.referrals = refRes.data;
 
-    const patientsRes = await DB.select("patients", { eq: { active: true } });
-    if (patientsRes.error) throw patientsRes.error;
-    state.patients = patientsRes.data;
-
-    const ids = state.patients.map(function(p){ return p.id; });
-
-    if (ids.length === 0){
-      state.tasks = []; state.referrals = []; state.investigations = [];
-      state.devices = []; state.rounds = [];
-    } else {
-      const [tasksRes, refRes, invRes, devRes, roundsRes] = await Promise.all([
-        DB.select("tasks", { in: { col: "patient_id", vals: ids } }),
-        DB.select("referrals", { in: { col: "patient_id", vals: ids } }),
-        DB.select("investigations", { in: { col: "patient_id", vals: ids } }),
-        DB.select("devices", { in: { col: "patient_id", vals: ids } }),
-        DB.select("rounds", { in: { col: "patient_id", vals: ids } })
-      ]);
-      if (tasksRes.error) throw tasksRes.error;
-      if (refRes.error) throw refRes.error;
-      if (invRes.error) throw invRes.error;
-      if (devRes.error) throw devRes.error;
-      if (roundsRes.error) throw roundsRes.error;
-      state.tasks = tasksRes.data;
-      state.referrals = refRes.data;
-      state.investigations = invRes.data;
-      state.devices = devRes.data;
-      state.rounds = roundsRes.data;
-    }
     state.loaded = true;
     return true;
   } catch(err){
@@ -781,10 +638,8 @@ function setupRealtime(){
   if (!USE_SUPABASE) return;
   try {
     realtimeChannel = supabaseClient.channel("ward-changes");
-    ["beds","patients","tasks","rounds","referrals","investigations","devices"].forEach(function(t){
-      realtimeChannel.on("postgres_changes", { event: "*", schema: "public", table: t }, function(){
-        scheduleReload();
-      });
+    ["beds","scans","theatre_listings","referrals"].forEach(function(t){
+      realtimeChannel.on("postgres_changes", { event: "*", schema: "public", table: t }, function(){ scheduleReload(); });
     });
     realtimeChannel.subscribe();
   } catch(e){
@@ -813,40 +668,47 @@ function confirmAction(message, onConfirm){
   document.getElementById("confirm-cancel").onclick = closeModal;
   document.getElementById("confirm-ok").onclick = function(){ closeModal(); onConfirm(); };
 }
-
 document.getElementById("modal-close").onclick = closeModal;
 document.getElementById("modal-overlay").addEventListener("click", function(e){
   if (e.target.id === "modal-overlay") closeModal();
 });
-
 function optionsHtml(list, selected){
   return list.map(function(v){
     return '<option value="'+esc(v)+'"'+(v===selected?" selected":"")+'>'+esc(v)+'</option>';
   }).join("");
 }
+function stageTrackHtml(stages, current, finalLabel){
+  return '<div class="stage-track">' + stages.map(function(s, i){
+    const curIdx = stageIndex(stages, current);
+    const cls = i < curIdx ? "done" : (i === curIdx ? "active" : "");
+    return '<span class="stage-pip '+cls+'">'+esc(s)+'</span>';
+  }).join("") + (finalLabel ? '<span class="stage-pip">'+esc(finalLabel)+'</span>' : '') + '</div>';
+}
 
 // ============================================================================
-// BADGES
+// BADGES (ward map + bed workspace)
 // ============================================================================
-function computeBadges(patient){
+function computeBadges(bed){
   const badges = [];
-  const pending = pendingTaskCount(patient.id);
-  const refPending = pendingReferralCount(patient.id);
-  if (patient.surgery_today) badges.push({ cls: "badge-theatre", text: "THEATRE" });
-  if (patient.for_discharge) badges.push({ cls: "badge-discharge", text: "DISCHARGE" });
-  if (patient.status === "Pre-op") badges.push({ cls: "badge-preop", text: "PRE-OP" });
-  if (patient.status === "Post-op"){
-    const pod = podFor(patient);
-    badges.push({ cls: "badge-postop", text: pod !== null ? "POD "+pod : "POST-OP" });
-  }
-  if (patient.status === "Critical") badges.push({ cls: "badge-critical", text: "CRITICAL" });
-  if (refPending > 0) badges.push({ cls: "badge-referral", text: "REFERRAL" });
-  if (pending > 0) badges.push({ cls: "badge-jobs", text: pending + (pending===1?" JOB":" JOBS") });
+  if (bed.for_discharge) badges.push({ cls: "badge-discharge", text: "DISCHARGE" });
+  const openTheatre = state.theatreListings.filter(function(t){ return t.bed_id === bed.id && !t.completed_at; });
+  openTheatre.forEach(function(t){
+    if (t.list_type === "Routine"){
+      const isToday = t.planned_date === todayDateStr();
+      badges.push({ cls: "badge-theatre", text: isToday ? "THEATRE TODAY" : "AAR" });
+    } else {
+      const abbr = { "HO flagged":"HO", "SHO confirmed":"SHO", "Consultant signed":"SIGNED" }[t.stage] || t.stage;
+      badges.push({ cls: "badge-theatre", text: "CASUALTY · " + abbr });
+    }
+  });
+  const openScans = openScanCount(bed.id);
+  if (openScans > 0) badges.push({ cls: "badge-scan", text: openScans + (openScans===1?" SCAN":" SCANS") });
+  const openRefs = openReferralCount(bed.id);
+  if (openRefs > 0) badges.push({ cls: "badge-referral", text: openRefs + (openRefs===1?" REFERRAL":" REFERRALS") });
   return badges;
 }
-function badgesHtml(patient, max){
-  const badges = computeBadges(patient).slice(0, max || 99);
-  return badges.map(function(b){ return '<span class="badge '+b.cls+'">'+esc(b.text)+'</span>'; }).join("");
+function badgesHtml(bed){
+  return computeBadges(bed).map(function(b){ return '<span class="badge '+b.cls+'">'+esc(b.text)+'</span>'; }).join("");
 }
 
 // ============================================================================
@@ -856,51 +718,53 @@ function updateCurrentDate(){
   const d = new Date();
   document.getElementById("current-date").textContent = d.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
 }
-
 function computeWardSummary(){
-  const occupied = state.patients.length;
-  const empty = TOTAL_BEDS - occupied;
-  const pendingJobs = state.tasks.filter(function(t){ return t.status === "Pending"; }).length;
-  const theatreToday = state.patients.filter(function(p){ return p.surgery_today; }).length;
-  const forDischarge = state.patients.filter(function(p){ return p.for_discharge; }).length;
-  return { occupied: occupied, empty: empty, pendingJobs: pendingJobs, theatreToday: theatreToday, forDischarge: forDischarge };
+  const occupied = state.beds.filter(function(b){ return b.occupied; }).length;
+  const empty = state.beds.length - occupied;
+  const scansPending = state.scans.filter(function(s){ return !s.completed_at; }).length;
+  const theatreToday = state.theatreListings.filter(function(t){
+    if (t.completed_at) return false;
+    if (t.list_type === "Casualty") return true;
+    return t.planned_date === todayDateStr();
+  }).length;
+  const refsPending = state.referrals.filter(function(r){ return !r.completed_at; }).length;
+  const forDischarge = state.beds.filter(function(b){ return b.for_discharge; }).length;
+  return { occupied:occupied, empty:empty, scansPending:scansPending, theatreToday:theatreToday, refsPending:refsPending, forDischarge:forDischarge };
 }
-
 function renderWardSummary(){
   const s = computeWardSummary();
+  function tile(cls, num, lbl){ return '<div class="summary-tile '+cls+'"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
   document.getElementById("ward-summary").innerHTML =
-    tile("occ", s.occupied, "Occupied beds") +
-    tile("empty", s.empty, "Empty beds") +
-    tile("jobs", s.pendingJobs, "Pending jobs") +
-    tile("theatre", s.theatreToday, "Theatre today") +
-    tile("disch", s.forDischarge, "For discharge");
-  function tile(cls, num, lbl){
-    return '<div class="summary-tile '+cls+'"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>';
-  }
-  const navCount = document.getElementById("nav-jobs-count");
-  if (s.pendingJobs > 0){ navCount.hidden = false; navCount.textContent = s.pendingJobs; }
-  else { navCount.hidden = true; }
+    tile("occ", s.occupied, "Occupied") + tile("empty", s.empty, "Empty") +
+    tile("scan", s.scansPending, "Scans pending") + tile("theatre", s.theatreToday, "Theatre today") +
+    tile("ref", s.refsPending, "Referrals pending") + tile("disch", s.forDischarge, "For discharge");
+  updateNavCounts(s);
+}
+function updateNavCounts(s){
+  s = s || computeWardSummary();
+  setNavCount("nav-scans-count", s.scansPending);
+  setNavCount("nav-theatre-count", s.theatreToday);
+  setNavCount("nav-referrals-count", s.refsPending);
+}
+function setNavCount(elId, n){
+  const el = document.getElementById(elId);
+  if (n > 0){ el.hidden = false; el.textContent = n; } else { el.hidden = true; }
 }
 
-function bedMatchesFilter(bed, patient, filter){
+function bedMatchesFilter(bed, filter){
   switch(filter){
-    case "occupied": return !!patient;
-    case "empty": return !patient;
-    case "theatre": return !!patient && patient.surgery_today;
-    case "discharge": return !!patient && patient.for_discharge;
-    case "preop": return !!patient && patient.status === "Pre-op";
-    case "postop": return !!patient && patient.status === "Post-op";
+    case "occupied": return bed.occupied;
+    case "empty": return !bed.occupied;
+    case "scan": return openScanCount(bed.id) > 0;
+    case "theatre": return openTheatreCount(bed.id) > 0;
+    case "referral": return openReferralCount(bed.id) > 0;
+    case "discharge": return bed.for_discharge;
     default: return true;
   }
 }
-function bedMatchesSearch(bed, patient, term){
+function bedMatchesSearch(bed, term){
   if (!term) return true;
-  term = term.toLowerCase();
-  if (bed.label.toLowerCase().indexOf(term) !== -1) return true;
-  if (!patient) return false;
-  return (patient.name||"").toLowerCase().indexOf(term) !== -1 ||
-         (patient.diagnosis||"").toLowerCase().indexOf(term) !== -1 ||
-         (patient.bht_no||"").toLowerCase().indexOf(term) !== -1;
+  return bed.label.toLowerCase().indexOf(term.toLowerCase()) !== -1;
 }
 
 function renderWardGrid(){
@@ -912,37 +776,31 @@ function renderWardGrid(){
   }
   const maxRow = Math.max.apply(null, beds.map(function(b){ return b.row_no; }).concat([1]));
   const maxCol = Math.max.apply(null, beds.map(function(b){ return b.col_no; }).concat([1]));
-  grid.style.gridTemplateColumns = "repeat(" + maxCol + ", minmax(110px, 1fr))";
+  grid.style.gridTemplateColumns = "repeat(" + maxCol + ", minmax(100px, 1fr))";
   grid.style.gridTemplateRows = "repeat(" + maxRow + ", auto)";
 
   const term = state.wardSearch.trim();
   const filter = state.wardFilter;
-  const patientByBed = {};
-  state.patients.forEach(function(p){ if (p.bed_id) patientByBed[p.bed_id] = p; });
 
   let html = "";
   beds.forEach(function(bed){
-    const patient = patientByBed[bed.id];
-    const matchesFilter = bedMatchesFilter(bed, patient, filter);
-    if (!matchesFilter) return;
-    const matchesSearch = bedMatchesSearch(bed, patient, term);
-    let cls = "bed-card " + (patient ? "occupied" : "empty");
+    if (!bedMatchesFilter(bed, filter)) return;
+    const matchesSearch = bedMatchesSearch(bed, term);
+    let cls = "bed-card " + (bed.occupied ? "occupied" : "empty");
     if (term && !matchesSearch) cls += " dimmed";
     else if (term && matchesSearch) cls += " match";
     const style = 'style="grid-row:'+bed.row_no+';grid-column:'+bed.col_no+';"';
-    if (patient){
-      html += '<div class="'+cls+'" '+style+' data-bed-id="'+bed.id+'" data-patient-id="'+patient.id+'">' +
+    if (bed.occupied){
+      html += '<div class="'+cls+'" '+style+' data-bed-id="'+bed.id+'">' +
         '<div class="bed-label">BED '+esc(bed.label)+'</div>' +
-        '<div class="bed-patient-name">'+esc(patient.name)+'</div>' +
-        '<div class="bed-diagnosis">'+esc(patient.diagnosis)+'</div>' +
-        '<div class="bed-badges">'+badgesHtml(patient,3)+'</div>' +
+        '<div class="bed-badges">'+badgesHtml(bed)+'</div>' +
       '</div>';
     } else {
       html += '<div class="'+cls+'" '+style+' data-bed-id="'+bed.id+'">' +
         '<div class="bed-label">BED '+esc(bed.label)+'</div>' +
         (bed.zone && bed.zone !== "Main ward" ? '<div class="bed-zone">'+esc(bed.zone)+'</div>' : '') +
         '<div class="bed-empty-text">EMPTY</div>' +
-        '<div class="bed-add">+ Add patient</div>' +
+        '<div class="bed-add">+ Mark occupied</div>' +
       '</div>';
     }
   });
@@ -951,510 +809,322 @@ function renderWardGrid(){
   grid.querySelectorAll(".bed-card").forEach(function(card){
     card.addEventListener("click", function(){
       const bedId = card.getAttribute("data-bed-id");
-      const patientId = card.getAttribute("data-patient-id");
-      if (patientId) openPatientView(patientId);
-      else openAdmissionModal(bedId);
+      const bed = byId(state.beds, bedId);
+      if (bed.occupied) openBedWorkspace(bedId);
+      else markBedOccupied(bedId);
     });
   });
 }
+function renderWard(){ renderWardSummary(); renderWardGrid(); }
 
-function renderWard(){
-  renderWardSummary();
-  renderWardGrid();
+async function markBedOccupied(bedId){
+  const res = await DB.update("beds", bedId, { occupied: true, occupied_since: nowIso() });
+  if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+  showToast("Bed " + bedLabelOf(bedId) + " marked occupied.", "success");
+  await loadAll();
+  renderCurrentView();
 }
+function bedLabelOf(bedId){ const b = byId(state.beds, bedId); return b ? b.label : "?"; }
 
 // ============================================================================
-// NEW ADMISSION
+// BED WORKSPACE
 // ============================================================================
-function openAdmissionModal(bedId){
-  const emptyBeds = state.beds.filter(function(b){
-    return !state.patients.some(function(p){ return p.bed_id === b.id; });
-  });
-  const bedSelectHtml = bedId
-    ? '<input type="text" disabled value="Bed ' + esc(bedLabel(bedId)) + '">'
-    : '<select id="adm-bed">' + emptyBeds.map(function(b){ return '<option value="'+b.id+'">Bed '+esc(b.label)+'</option>'; }).join("") + '</select>';
-
-  const body =
-    '<div class="form-group"><label>Patient name *</label><input type="text" id="adm-name" placeholder="e.g. Nimal Perera"></div>' +
-    '<div class="form-group"><label>Bed *</label>' + bedSelectHtml + '</div>' +
-    '<div class="form-group"><label>Current diagnosis *</label><input type="text" id="adm-diagnosis" placeholder="e.g. Acute cholecystitis"></div>' +
-    '<div class="form-group"><label>Patient status</label><select id="adm-status">' + optionsHtml(["New admission","Conservative","Pre-op","Post-op","Critical"], "New admission") + '</select></div>' +
-    '<div class="form-row">' +
-      '<div class="form-group"><label>Age</label><input type="number" id="adm-age" min="0" max="130"></div>' +
-      '<div class="form-group"><label>BHT / hospital number</label><input type="text" id="adm-bht"></div>' +
-    '</div>' +
-    '<div class="form-group"><label>Date admitted</label><input type="date" id="adm-date" value="' + todayDateStr() + '"></div>';
-
-  openModal("New Admission", body,
-    '<button class="btn" id="adm-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="adm-save">Admit patient</button>');
-
-  document.getElementById("adm-cancel").onclick = closeModal;
-  document.getElementById("adm-save").onclick = async function(){
-    const name = document.getElementById("adm-name").value.trim();
-    const diagnosis = document.getElementById("adm-diagnosis").value.trim();
-    const chosenBedId = bedId || (document.getElementById("adm-bed") && document.getElementById("adm-bed").value);
-    if (!name){ showToast("Patient name is required.", "error"); return; }
-    if (!diagnosis){ showToast("Diagnosis is required.", "error"); return; }
-    if (!chosenBedId){ showToast("Please choose a bed.", "error"); return; }
-    if (state.patients.some(function(p){ return p.bed_id === chosenBedId; })){
-      showToast("That bed is already occupied.", "error"); return;
-    }
-    const btn = document.getElementById("adm-save"); btn.disabled = true;
-    const age = document.getElementById("adm-age").value;
-    const row = {
-      name: name,
-      diagnosis: diagnosis,
-      bed_id: chosenBedId,
-      status: document.getElementById("adm-status").value,
-      age: age ? parseInt(age,10) : null,
-      bht_no: document.getElementById("adm-bht").value.trim() || null,
-      admitted_date: document.getElementById("adm-date").value || todayDateStr(),
-      active: true,
-      surgery_today: false,
-      for_discharge: false,
-      preop_checklist: {},
-      updated_at: nowIso()
-    };
-    const res = await DB.insert("patients", row);
-    btn.disabled = false;
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Patient admitted to Bed " + bedLabel(chosenBedId) + ".", "success");
-    await loadAll();
-    renderCurrentView();
-  };
+function openBedWorkspace(bedId){
+  state.currentBedId = bedId;
+  switchView("bed");
 }
-
-// ============================================================================
-// EDIT PATIENT
-// ============================================================================
-function openEditPatientModal(patient){
-  const body =
-    '<div class="form-group"><label>Patient name *</label><input type="text" id="ep-name" value="'+esc(patient.name)+'"></div>' +
-    '<div class="form-group"><label>Current diagnosis *</label><input type="text" id="ep-diagnosis" value="'+esc(patient.diagnosis)+'"></div>' +
-    '<div class="form-group"><label>Patient status</label><select id="ep-status">'+optionsHtml(PATIENT_STATUSES.filter(function(s){return s!=="Discharged" && s!=="Transferred";}), patient.status)+'</select></div>' +
-    '<div class="form-row">' +
-      '<div class="form-group"><label>Age</label><input type="number" id="ep-age" min="0" max="130" value="'+(patient.age||"")+'"></div>' +
-      '<div class="form-group"><label>BHT / hospital number</label><input type="text" id="ep-bht" value="'+esc(patient.bht_no||"")+'"></div>' +
-    '</div>' +
-    '<div class="form-group"><label>Date admitted</label><input type="date" id="ep-date" value="'+esc(patient.admitted_date||todayDateStr())+'"></div>';
-
-  openModal("Edit Patient", body,
-    '<button class="btn" id="ep-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="ep-save">Save</button>');
-  document.getElementById("ep-cancel").onclick = closeModal;
-  document.getElementById("ep-save").onclick = async function(){
-    const name = document.getElementById("ep-name").value.trim();
-    const diagnosis = document.getElementById("ep-diagnosis").value.trim();
-    if (!name){ showToast("Patient name is required.", "error"); return; }
-    if (!diagnosis){ showToast("Diagnosis is required.", "error"); return; }
-    const age = document.getElementById("ep-age").value;
-    const patch = {
-      name: name, diagnosis: diagnosis,
-      status: document.getElementById("ep-status").value,
-      age: age ? parseInt(age,10) : null,
-      bht_no: document.getElementById("ep-bht").value.trim() || null,
-      admitted_date: document.getElementById("ep-date").value,
-      updated_at: nowIso()
-    };
-    const res = await DB.update("patients", patient.id, patch);
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Patient updated.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-function openEditDiagnosisModal(patient){
-  const body = '<div class="form-group"><label>Current diagnosis *</label><input type="text" id="ed-diagnosis" value="'+esc(patient.diagnosis)+'"></div>';
-  openModal("Edit Diagnosis", body,
-    '<button class="btn" id="ed-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="ed-save">Save</button>');
-  document.getElementById("ed-cancel").onclick = closeModal;
-  document.getElementById("ed-save").onclick = async function(){
-    const diagnosis = document.getElementById("ed-diagnosis").value.trim();
-    if (!diagnosis){ showToast("Diagnosis cannot be empty.", "error"); return; }
-    const res = await DB.update("patients", patient.id, { diagnosis: diagnosis, updated_at: nowIso() });
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Diagnosis updated.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-// ============================================================================
-// MOVE / SWAP BED
-// ============================================================================
-function openMoveModal(patient){
-  const patientByBed = {};
-  state.patients.forEach(function(p){ if (p.bed_id) patientByBed[p.bed_id] = p; });
-  const beds = state.beds.slice().sort(function(a,b){ return parseInt(a.label,10) - parseInt(b.label,10) || a.label.localeCompare(b.label); });
-  const grid = beds.map(function(b){
-    const occ = patientByBed[b.id];
-    const isCurrent = b.id === patient.bed_id;
-    let cls = "bedpick " + (isCurrent ? "current" : (occ ? "occupied" : "empty"));
-    const label = "Bed " + esc(b.label) + (occ && !isCurrent ? "<br><span style='font-weight:400'>"+esc(occ.name.split(" ")[0])+"</span>" : "");
-    return '<div class="'+cls+'" data-bed-id="'+b.id+'"'+(isCurrent?"":'')+'>'+label+'</div>';
-  }).join("");
-
-  openModal("Move / Swap Bed — currently Bed " + bedLabel(patient.bed_id),
-    '<p class="small muted" style="margin-bottom:8px;">Choose a bed. Empty beds move the patient directly; occupied beds offer a swap.</p>' +
-    '<div class="bedpicker-grid">' + grid + '</div>',
-    '<button class="btn" id="mv-cancel">Cancel</button>');
-  document.getElementById("mv-cancel").onclick = closeModal;
-
-  document.querySelectorAll("#modal-body .bedpick").forEach(function(el){
-    el.addEventListener("click", async function(){
-      const targetBedId = el.getAttribute("data-bed-id");
-      if (targetBedId === patient.bed_id){ showToast("Patient is already in that bed.", "error"); return; }
-      const targetPatient = patientByBed[targetBedId];
-      if (targetPatient){
-        confirmAction(
-          "Swap " + patient.name + " in Bed " + bedLabel(patient.bed_id) + " with " + targetPatient.name + " in Bed " + bedLabel(targetBedId) + "?",
-          async function(){
-            const r1 = await DB.update("patients", patient.id, { bed_id: targetBedId, updated_at: nowIso() });
-            if (r1.error){ showToast(friendlyError(r1.error), "error"); return; }
-            const r2 = await DB.update("patients", targetPatient.id, { bed_id: patient.bed_id, updated_at: nowIso() });
-            if (r2.error){ showToast(friendlyError(r2.error), "error"); return; }
-            showToast("Swapped beds.", "success");
-            await loadAll();
-            state.currentPatientId = patient.id;
-            renderCurrentView();
-          }
-        );
-      } else {
-        closeModal();
-        const res = await DB.update("patients", patient.id, { bed_id: targetBedId, updated_at: nowIso() });
-        if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-        showToast("Moved to Bed " + bedLabel(targetBedId) + ".", "success");
-        await loadAll();
-        state.currentPatientId = patient.id;
-        renderCurrentView();
-      }
-    });
-  });
-}
-
-// ============================================================================
-// PATIENT VIEW
-// ============================================================================
-function openPatientView(patientId){
-  state.currentPatientId = patientId;
-  state.currentPatientTab = "overview";
-  switchView("patient");
-}
-
 document.getElementById("btn-back-to-ward").addEventListener("click", function(){
-  state.currentPatientId = null;
+  state.currentBedId = null;
   switchView("ward");
 });
-document.getElementById("btn-edit-patient").addEventListener("click", function(){
-  const p = byId(state.patients, state.currentPatientId);
-  if (p) openEditPatientModal(p);
-});
-document.getElementById("btn-edit-diagnosis").addEventListener("click", function(){
-  const p = byId(state.patients, state.currentPatientId);
-  if (p) openEditDiagnosisModal(p);
-});
-document.getElementById("btn-move-patient").addEventListener("click", function(){
-  const p = byId(state.patients, state.currentPatientId);
-  if (p) openMoveModal(p);
-});
-document.getElementById("patient-tabs").addEventListener("click", function(e){
-  const btn = e.target.closest(".tab-btn");
-  if (!btn) return;
-  state.currentPatientTab = btn.getAttribute("data-tab");
-  renderPatientView();
-});
 
-function renderPatientView(){
-  const patient = byId(state.patients, state.currentPatientId);
-  if (!patient){
+function renderBedWorkspace(){
+  const bed = byId(state.beds, state.currentBedId);
+  if (!bed){ switchView("ward"); return; }
+
+  document.getElementById("bw-label").textContent = "BED " + bed.label;
+  document.getElementById("bw-since").textContent = bed.occupied_since ? "Occupied since " + fmtDateTime(bed.occupied_since) : "";
+  document.getElementById("bw-badges").innerHTML = badgesHtml(bed) || '<span class="small muted">No active items</span>';
+
+  // Scans
+  const scans = bedScans(bed.id).slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  document.getElementById("bw-scans").innerHTML = scans.length ? scans.map(scanRowHtml).join("") : '<p class="empty-state">No scans requested.</p>';
+  bindScanRowActions(document.getElementById("bw-scans"));
+
+  // Routine theatre
+  const routine = bedTheatre(bed.id, "Routine").filter(function(t){ return !t.completed_at; });
+  document.getElementById("bw-routine").innerHTML = routine.length ? routine.map(theatreRowHtml).join("") :
+    '<p class="empty-state">Not on the routine list.</p><button class="btn btn-sm btn-primary" id="bw-add-routine">+ Add to Routine List</button>';
+  bindTheatreRowActions(document.getElementById("bw-routine"));
+  const addRoutineBtn = document.getElementById("bw-add-routine");
+  if (addRoutineBtn) addRoutineBtn.addEventListener("click", function(){ openAddTheatreModal(bed.id, "Routine"); });
+
+  // Casualty theatre
+  const casualty = bedTheatre(bed.id, "Casualty").filter(function(t){ return !t.completed_at; });
+  document.getElementById("bw-casualty").innerHTML = casualty.length ? casualty.map(theatreRowHtml).join("") :
+    '<p class="empty-state">Not flagged for casualty theatre.</p><button class="btn btn-sm btn-primary" id="bw-add-casualty">+ Flag for Casualty Theatre</button>';
+  bindTheatreRowActions(document.getElementById("bw-casualty"));
+  const addCasualtyBtn = document.getElementById("bw-add-casualty");
+  if (addCasualtyBtn) addCasualtyBtn.addEventListener("click", function(){ openAddTheatreModal(bed.id, "Casualty"); });
+
+  // Referrals
+  const refs = bedReferrals(bed.id).slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  document.getElementById("bw-referrals").innerHTML = refs.length ? refs.map(referralRowHtml).join("") : '<p class="empty-state">No referrals recorded.</p>';
+  bindReferralRowActions(document.getElementById("bw-referrals"));
+
+  // Discharge toggle
+  document.getElementById("bw-disc-yes").className = bed.for_discharge ? "active-yes" : "";
+  document.getElementById("bw-disc-no").className = !bed.for_discharge ? "active-no" : "";
+}
+
+document.getElementById("bw-add-scan").addEventListener("click", function(){ openAddScanModal(state.currentBedId); });
+document.getElementById("bw-add-referral").addEventListener("click", function(){ openAddReferralModal(state.currentBedId); });
+document.getElementById("bw-disc-yes").addEventListener("click", function(){ setForDischarge(state.currentBedId, true); });
+document.getElementById("bw-disc-no").addEventListener("click", function(){ setForDischarge(state.currentBedId, false); });
+
+document.getElementById("btn-vacate-bed").addEventListener("click", function(){
+  const bed = byId(state.beds, state.currentBedId);
+  if (!bed) return;
+  const openCount = openScanCount(bed.id) + openTheatreCount(bed.id) + openReferralCount(bed.id);
+  const doVacate = async function(){
+    const res = await DB.update("beds", bed.id, { occupied:false, occupied_since:null, for_discharge:false, discharge_marked_at:null });
+    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+    await Promise.all([
+      DB.removeWhere("scans", "bed_id", bed.id),
+      DB.removeWhere("theatre_listings", "bed_id", bed.id),
+      DB.removeWhere("referrals", "bed_id", bed.id)
+    ]);
+    showToast("Bed " + bed.label + " is now empty.", "success");
+    state.currentBedId = null;
+    await loadAll();
     switchView("ward");
-    return;
+  };
+  if (openCount > 0){
+    confirmAction("Bed " + bed.label + " still has " + openCount + " open item(s) (scan/theatre/referral). Marking it empty will clear them. Continue?", doVacate);
+  } else {
+    doVacate();
   }
-  document.getElementById("pv-bed").textContent = "BED " + bedLabel(patient.bed_id);
-  document.getElementById("pv-name").textContent = patient.name;
-  document.getElementById("pv-diagnosis").textContent = patient.diagnosis;
-  document.getElementById("pv-status").textContent = "STATUS: " + patient.status.toUpperCase();
-  document.getElementById("pv-badges").innerHTML = badgesHtml(patient);
+});
 
-  document.querySelectorAll("#patient-tabs .tab-btn").forEach(function(b){
-    b.classList.toggle("active", b.getAttribute("data-tab") === state.currentPatientTab);
-  });
-
-  const content = document.getElementById("patient-tab-content");
-  switch(state.currentPatientTab){
-    case "overview": content.innerHTML = renderOverviewTab(patient); bindOverviewTab(patient); break;
-    case "rounds": content.innerHTML = renderRoundsTab(patient); bindRoundsTab(patient); break;
-    case "referrals": content.innerHTML = renderReferralsTab(patient); bindReferralsTab(patient); break;
-    case "investigations": content.innerHTML = renderInvestigationsTab(patient); bindInvestigationsTab(patient); break;
-    case "theatre": content.innerHTML = renderTheatreTab(patient); bindTheatreTab(patient); break;
-    case "postop": content.innerHTML = renderPostopTab(patient); bindPostopTab(patient); break;
-    case "discharge": content.innerHTML = renderDischargeTab(patient); bindDischargeTab(patient); break;
-  }
-}
-
-// ---- OVERVIEW TAB ----
-function renderOverviewTab(patient){
-  const tasks = patientTasks(patient.id).slice().sort(function(a,b){
-    if ((a.status==="Pending") !== (b.status==="Pending")) return a.status==="Pending" ? -1 : 1;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-  const rounds = patientRounds(patient.id).slice(0,3);
-
-  const jobsHtml = tasks.length ? tasks.map(jobRowHtml).join("") : '<p class="empty-state">No outstanding jobs.</p>';
-
-  const roundsHtml = rounds.length ? rounds.map(roundCardHtml).join("") :
-    '<p class="empty-state">No rounds recorded yet.</p>';
-
-  const timeline = buildTimeline(patient).slice(0,8);
-  const timelineHtml = timeline.length ? timeline.map(function(t){
-    return '<div class="timeline-item"><span class="timeline-time">'+fmtTime(t.time)+'</span>'+esc(t.text)+'</div>';
-  }).join("") : '<p class="empty-state">No activity recorded yet.</p>';
-
-  return (
-    '<div class="card"><div class="section-title">Outstanding jobs <button class="btn btn-sm btn-primary" id="ov-add-job">+ Add job</button></div>' +
-    '<div id="ov-jobs-list">' + jobsHtml + '</div></div>' +
-    '<div class="card"><div class="section-title">Recent ward rounds <button class="btn btn-sm" data-tab="rounds" id="ov-view-rounds">+ Add round</button></div>' +
-    '<div id="ov-rounds-list">' + roundsHtml + '</div></div>' +
-    '<div class="card"><div class="section-title">Timeline</div><div>' + timelineHtml + '</div></div>'
-  );
-}
-function jobRowHtml(t){
-  return '<div class="job-row'+(t.status==="Done"?" done":"")+'" data-task-id="'+t.id+'">' +
-    '<div class="row-top"><div><span class="row-bed-tag">'+esc(t.category)+'</span></div>' +
-    '<button class="btn btn-sm '+(t.status==="Done"?"":"btn-success")+' job-toggle" data-task-id="'+t.id+'">'+(t.status==="Done"?"Pending":"Done")+'</button></div>' +
-    '<div class="row-title">'+esc(t.description)+'</div>' +
-    '<div class="row-sub">'+(t.status==="Done" ? "Completed "+fmtDateTime(t.completed_at) : "Created "+fmtDateTime(t.created_at))+' &middot; '+esc(t.source_type)+'</div>' +
-  '</div>';
-}
-function roundCardHtml(r){
-  const recs = Array.isArray(r.recommendations) ? r.recommendations : [];
-  return '<div class="card" style="box-shadow:none;border-style:dashed;">' +
-    '<div class="row-sub">'+fmtDateTime(r.round_at)+'</div>' +
-    '<div class="row-title">'+esc(r.round_type)+'</div>' +
-    '<div class="row-sub">'+esc(r.doctor_name||"")+'</div>' +
-    (recs.length ? '<ul style="margin:8px 0 0 18px;padding:0;font-size:0.85rem;">' + recs.map(function(x){return '<li>'+esc(x)+'</li>';}).join("") + '</ul>' : "") +
-  '</div>';
-}
-function buildTimeline(patient){
-  const items = [];
-  patientRounds(patient.id).forEach(function(r){ items.push({ time: r.round_at, text: r.round_type + (r.doctor_name?" — "+r.doctor_name:"") }); });
-  patientReferrals(patient.id).forEach(function(r){
-    items.push({ time: r.created_at, text: r.specialty + " referral requested" });
-    if (r.completed_at) items.push({ time: r.completed_at, text: r.specialty + " referral completed" });
-  });
-  patientInvestigations(patient.id).forEach(function(i){
-    items.push({ time: i.created_at, text: i.investigation + " requested" });
-    if (i.completed_at) items.push({ time: i.completed_at, text: i.investigation + " reviewed" });
-  });
-  return items.sort(function(a,b){ return new Date(b.time) - new Date(a.time); });
-}
-
-function bindOverviewTab(patient){
-  document.getElementById("ov-add-job").addEventListener("click", function(){ openAddJobModal(patient); });
-  document.getElementById("ov-view-rounds").addEventListener("click", function(){ state.currentPatientTab = "rounds"; renderPatientView(); });
-  document.getElementById("ov-jobs-list").querySelectorAll(".job-toggle").forEach(function(btn){
-    btn.addEventListener("click", function(){ toggleTaskStatus(btn.getAttribute("data-task-id")); });
-  });
-}
-
-async function toggleTaskStatus(taskId){
-  const t = byId(state.tasks, taskId);
-  if (!t) return;
-  const newStatus = t.status === "Done" ? "Pending" : "Done";
-  const patch = { status: newStatus, completed_at: newStatus === "Done" ? nowIso() : null };
-  const res = await DB.update("tasks", taskId, patch);
+async function setForDischarge(bedId, val){
+  const patch = { for_discharge: val, discharge_marked_at: val ? nowIso() : null };
+  const res = await DB.update("beds", bedId, patch);
   if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-  if (newStatus === "Done") await autoCompleteLinked(t);
   await loadAll();
   renderCurrentView();
 }
 
-// When a task tied to a referral or investigation is marked Done manually,
-// nothing else needs to change (the source record keeps its own status).
-async function autoCompleteLinked(task){ /* no-op: linkage only flows source -> task, not task -> source */ }
-
-function openAddJobModal(patient){
-  const body =
-    '<div class="form-group"><label>Category</label><select id="job-category">'+optionsHtml(JOB_CATEGORIES,"General")+'</select></div>' +
-    '<div class="form-group"><label>Description *</label><input type="text" id="job-desc" placeholder="e.g. Repeat FBC"></div>';
-  openModal("Add Job", body,
-    '<button class="btn" id="job-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="job-save">Add job</button>');
-  document.getElementById("job-cancel").onclick = closeModal;
-  document.getElementById("job-save").onclick = async function(){
-    const desc = document.getElementById("job-desc").value.trim();
-    if (!desc){ showToast("Job description is required.", "error"); return; }
-    const res = await DB.insert("tasks", {
-      patient_id: patient.id,
-      category: document.getElementById("job-category").value,
-      description: desc,
-      status: "Pending",
-      source_type: "Manual",
-      source_id: null
-    });
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Job added.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-// ---- ROUNDS TAB ----
-function renderRoundsTab(patient){
-  const rounds = patientRounds(patient.id);
-  const list = rounds.length ? rounds.map(roundCardHtml).join("") : '<p class="empty-state">No rounds recorded yet.</p>';
-  return '<div class="card"><div class="section-title">Ward rounds <button class="btn btn-sm btn-primary" id="rd-add">+ Add round</button></div>' +
-    '<div>' + list + '</div></div>';
-}
-function bindRoundsTab(patient){
-  document.getElementById("rd-add").addEventListener("click", function(){ openAddRoundModal(patient); });
-}
-function openAddRoundModal(patient){
-  const doctorOptions = state.staff.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+' ('+esc(s.role)+')</option>'; }).join("");
-  const body =
-    '<div class="form-group"><label>Round type *</label><select id="rd-type">'+optionsHtml(ROUND_TYPES, ROUND_TYPES[0])+'</select></div>' +
-    '<div class="form-group"><label>Doctor</label><select id="rd-doctor"><option value="">— Select —</option>'+doctorOptions+'</select>' +
-      (state.staff.length===0 ? '<div class="hint">No staff saved yet. Add doctors under Settings.</div>' : '') + '</div>' +
-    '<div class="form-row">' +
-      '<div class="form-group"><label>Date</label><input type="date" id="rd-date" value="'+todayDateStr()+'"></div>' +
-      '<div class="form-group"><label>Time</label><input type="time" id="rd-time" value="'+nowTimeStr()+'"></div>' +
-    '</div>' +
-    '<div class="form-group"><label>Recommendations (one per line) *</label><textarea id="rd-recs" placeholder="Refer cardiology\nEcho\nKeep NBM"></textarea></div>' +
-    '<div class="checkbox-row"><input type="checkbox" id="rd-createjobs" checked><label for="rd-createjobs">Create recommendations as jobs</label></div>';
-
-  openModal("Add Ward Round", body,
-    '<button class="btn" id="rd-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="rd-save">Save round</button>');
-  document.getElementById("rd-cancel").onclick = closeModal;
-  document.getElementById("rd-save").onclick = async function(){
-    const recsRaw = document.getElementById("rd-recs").value;
-    const recs = recsRaw.split("\n").map(function(s){return s.trim();}).filter(Boolean);
-    if (recs.length === 0){ showToast("Please enter at least one recommendation.", "error"); return; }
-    const dateVal = document.getElementById("rd-date").value || todayDateStr();
-    const timeVal = document.getElementById("rd-time").value || nowTimeStr();
-    const doctorId = document.getElementById("rd-doctor").value || null;
-    const doctor = doctorId ? byId(state.staff, doctorId) : null;
-    const btn = document.getElementById("rd-save"); btn.disabled = true;
-    const res = await DB.insert("rounds", {
-      patient_id: patient.id,
-      round_type: document.getElementById("rd-type").value,
-      doctor_id: doctorId,
-      doctor_name: doctor ? doctor.name : null,
-      round_at: new Date(dateVal + "T" + timeVal + ":00").toISOString(),
-      recommendations: recs
-    });
-    if (res.error){ btn.disabled=false; showToast(friendlyError(res.error), "error"); return; }
-    if (document.getElementById("rd-createjobs").checked){
-      for (let i=0;i<recs.length;i++){
-        await DB.insert("tasks", {
-          patient_id: patient.id, category: "General", description: recs[i],
-          status: "Pending", source_type: "Round", source_id: res.data.id + ":" + i
-        });
-      }
-    }
-    btn.disabled = false;
-    closeModal();
-    showToast("Round saved.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-// ---- REFERRALS TAB ----
-function renderReferralsTab(patient){
-  const refs = patientReferrals(patient.id).slice().sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
-  const list = refs.length ? refs.map(referralCardHtml).join("") : '<p class="empty-state">No referrals recorded.</p>';
-  return '<div class="card"><div class="section-title">Referrals <button class="btn btn-sm btn-primary" id="rf-add">+ Add referral</button></div>' +
-    '<div id="rf-list">' + list + '</div></div>';
-}
-function referralCardHtml(r){
-  return '<div class="card" style="box-shadow:none;" data-referral-id="'+r.id+'">' +
-    '<div class="row-top"><div>' +
-      '<span class="row-bed-tag">'+esc(r.referral_type)+'</span> ' +
-      '<span class="row-title" style="display:inline;">'+esc(r.specialty)+'</span>' +
-    '</div></div>' +
-    (r.reason ? '<div class="row-sub" style="margin-top:4px;">Reason: '+esc(r.reason)+'</div>' : "") +
-    '<div class="row-sub">Requested '+fmtDateTime(r.created_at)+'</div>' +
-    '<div class="form-row" style="margin-top:8px;">' +
-      '<div class="form-group"><label>Status</label><select class="rf-status" data-id="'+r.id+'">'+optionsHtml(REFERRAL_STATUSES, r.status)+'</select></div>' +
-    '</div>' +
-    '<div class="form-group"><label>Recommendation</label><textarea class="rf-rec" data-id="'+r.id+'" placeholder="e.g. Proceed after echo">'+esc(r.recommendation||"")+'</textarea></div>' +
-    '<button class="btn btn-sm btn-primary rf-save" data-id="'+r.id+'">Save</button>' +
-    (r.completed_at ? '<div class="row-sub" style="margin-top:6px;">Completed '+fmtDateTime(r.completed_at)+'</div>' : "") +
+// ---- SCANS ----
+function scanRowHtml(s){
+  const stageLabel = s.completed_at ? "Sent" : s.stage;
+  return '<div class="item-row'+(s.completed_at?" done":"")+'" data-scan-id="'+s.id+'">' +
+    '<div class="row-top"><div><span class="row-bed-tag">'+esc(s.scan_type)+'</span></div></div>' +
+    (s.details ? '<div class="row-title">'+esc(s.details)+'</div>' : '') +
+    '<div class="row-sub">Requested '+fmtDateTime(s.created_at)+'</div>' +
+    (s.completed_at ? '<div class="row-sub">Sent '+fmtDateTime(s.completed_at)+'</div>' : stageTrackHtml(SCAN_STAGES.slice(0,3), s.stage, "Sent")) +
+    (s.completed_at ? '' : '<div class="row-actions">' + scanActionButtons(s) + '</div>') +
   '</div>';
 }
-function bindReferralsTab(patient){
-  document.getElementById("rf-add").addEventListener("click", function(){ openAddReferralModal(patient); });
-  document.querySelectorAll(".rf-save").forEach(function(btn){
+function scanActionButtons(s){
+  const idx = stageIndex(SCAN_STAGES, s.stage);
+  if (idx === 0) return '<button class="btn btn-sm scan-advance" data-id="'+s.id+'" data-next="SHO confirmed">Confirm (SHO)</button>';
+  if (idx === 1) return '<button class="btn btn-sm scan-advance" data-id="'+s.id+'" data-next="Consultant signed">Sign (Consultant)</button>';
+  if (idx === 2) return '<button class="btn btn-sm btn-success scan-advance" data-id="'+s.id+'" data-next="Sent">Mark Sent</button>';
+  return "";
+}
+function bindScanRowActions(container){
+  container.querySelectorAll(".scan-advance").forEach(function(btn){
     btn.addEventListener("click", async function(){
       const id = btn.getAttribute("data-id");
-      const status = document.querySelector('.rf-status[data-id="'+id+'"]').value;
-      const recommendation = document.querySelector('.rf-rec[data-id="'+id+'"]').value.trim();
-      const r = byId(state.referrals, id);
-      const patch = { status: status, recommendation: recommendation || null };
-      const wasCompleted = r.status === "Completed";
-      if (status === "Completed" && !wasCompleted) patch.completed_at = nowIso();
-      if (status !== "Completed") patch.completed_at = null;
-      const res = await DB.update("referrals", id, patch);
+      const next = btn.getAttribute("data-next");
+      const patch = { stage: next, updated_at: nowIso() };
+      if (next === "Sent") patch.completed_at = nowIso();
+      const res = await DB.update("scans", id, patch);
       if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-      if (status === "Completed" && !wasCompleted){
-        const linkedTask = state.tasks.find(function(t){ return t.source_type === "Referral" && t.source_id === id; });
-        if (linkedTask && linkedTask.status !== "Done"){
-          await DB.update("tasks", linkedTask.id, { status: "Done", completed_at: nowIso() });
-        }
-      }
-      showToast("Referral updated.", "success");
+      showToast(next === "Sent" ? "Marked sent for scan." : "Scan updated to " + next + ".", "success");
       await loadAll();
       renderCurrentView();
     });
   });
 }
-function openAddReferralModal(patient){
-  function specialtyOptions(type){ return optionsHtml(REFERRAL_SPECIALTIES[type], REFERRAL_SPECIALTIES[type][0]); }
+function openAddScanModal(bedId){
   const body =
-    '<div class="form-group"><label>Referral type *</label><select id="rf-type">'+optionsHtml(REFERRAL_TYPES, REFERRAL_TYPES[0])+'</select></div>' +
-    '<div class="form-group"><label>Specialty *</label><select id="rf-specialty">'+specialtyOptions(REFERRAL_TYPES[0])+'</select></div>' +
-    '<div class="form-group" id="rf-other-wrap" style="display:none;"><label>Specify specialty *</label><input type="text" id="rf-other"></div>' +
-    '<div class="form-group"><label>Reason</label><textarea id="rf-reason" placeholder="e.g. Pre-operative cardiac assessment"></textarea></div>';
+    '<div class="form-group"><label>Scan type *</label><select id="sc-type">'+optionsHtml(SCAN_TYPES,"USS")+'</select></div>' +
+    '<div class="form-group"><label>Details (optional)</label><input type="text" id="sc-details" placeholder="e.g. abdomen"></div>';
+  openModal("Request Scan", body,
+    '<button class="btn" id="sc-cancel">Cancel</button>' +
+    '<button class="btn btn-primary" id="sc-save">Request</button>');
+  document.getElementById("sc-cancel").onclick = closeModal;
+  document.getElementById("sc-save").onclick = async function(){
+    const type = document.getElementById("sc-type").value;
+    const existing = bedScans(bedId).find(function(s){ return s.scan_type === type && !s.completed_at; });
+    if (existing){ showToast("A " + type + " scan is already pending for this bed — update its stage instead.", "error"); return; }
+    const res = await DB.insert("scans", {
+      bed_id: bedId, scan_type: type, details: document.getElementById("sc-details").value.trim() || null, stage: "HO flagged"
+    });
+    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+    closeModal();
+    showToast("Scan requested.", "success");
+    await loadAll();
+    renderCurrentView();
+  };
+}
+
+// ---- THEATRE ----
+function theatreRowHtml(t, showOpenBed){
+  const bed = byId(state.beds, t.bed_id);
+  const isRoutine = t.list_type === "Routine";
+  const dateInfo = isRoutine ? (t.planned_date === todayDateStr() ? "TODAY" : fmtDate(t.planned_date)) : "";
+  return '<div class="item-row" data-theatre-id="'+t.id+'">' +
+    '<div class="row-top">' +
+      (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' : '') +
+      (isRoutine ? '<span class="row-sub" style="font-weight:800;">'+esc(dateInfo)+'</span>' : '') +
+    '</div>' +
+    '<div class="row-title">'+esc(t.anesthesia_mode)+(t.procedure_note ? " &middot; " + esc(t.procedure_note) : "")+'</div>' +
+    (isRoutine ? '' : stageTrackHtml(THEATRE_STAGES, t.stage, "Listed")) +
+    '<div class="row-actions">' + theatreActionButtons(t) +
+      (showOpenBed && bed ? '<button class="btn btn-sm gv-open" data-bed-id="'+bed.id+'">OPEN BED</button>' : '') +
+    '</div>' +
+    '<div class="row-actions"><button class="btn btn-sm th-edit-anaes" data-id="'+t.id+'">Change anaesthesia</button></div>' +
+  '</div>';
+}
+function theatreActionButtons(t){
+  if (t.list_type === "Routine"){
+    return '<button class="btn btn-sm btn-success th-complete" data-id="'+t.id+'">Mark Listed / Sent</button>';
+  }
+  const idx = stageIndex(THEATRE_STAGES, t.stage);
+  if (idx === 0) return '<button class="btn btn-sm th-advance" data-id="'+t.id+'" data-next="SHO confirmed">Confirm (SHO)</button>';
+  if (idx === 1) return '<button class="btn btn-sm th-advance" data-id="'+t.id+'" data-next="Consultant signed">Sign (Consultant)</button>';
+  return '<button class="btn btn-sm btn-success th-complete" data-id="'+t.id+'">Mark Listed / Sent</button>';
+}
+function bindTheatreRowActions(container){
+  container.querySelectorAll(".th-advance").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      const res = await DB.update("theatre_listings", btn.getAttribute("data-id"), { stage: btn.getAttribute("data-next"), updated_at: nowIso() });
+      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+      showToast("Updated.", "success");
+      await loadAll(); renderCurrentView();
+    });
+  });
+  container.querySelectorAll(".th-complete").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      const res = await DB.update("theatre_listings", btn.getAttribute("data-id"), { completed_at: nowIso() });
+      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+      showToast("Marked listed / sent to theatre.", "success");
+      await loadAll(); renderCurrentView();
+    });
+  });
+  container.querySelectorAll(".th-edit-anaes").forEach(function(btn){
+    btn.addEventListener("click", function(){ openEditAnaesthesiaModal(byId(state.theatreListings, btn.getAttribute("data-id"))); });
+  });
+}
+function openEditAnaesthesiaModal(listing){
+  const body =
+    '<div class="form-group"><label>Anaesthesia mode</label><select id="an-mode">'+optionsHtml(ANESTHESIA_MODES, listing.anesthesia_mode)+'</select></div>' +
+    '<div class="form-group"><label>Procedure (optional)</label><input type="text" id="an-proc" value="'+esc(listing.procedure_note||"")+'"></div>';
+  openModal("Update Theatre Details", body,
+    '<button class="btn" id="an-cancel">Cancel</button>' +
+    '<button class="btn btn-primary" id="an-save">Save</button>');
+  document.getElementById("an-cancel").onclick = closeModal;
+  document.getElementById("an-save").onclick = async function(){
+    const res = await DB.update("theatre_listings", listing.id, {
+      anesthesia_mode: document.getElementById("an-mode").value,
+      procedure_note: document.getElementById("an-proc").value.trim() || null,
+      updated_at: nowIso()
+    });
+    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+    closeModal();
+    showToast("Theatre details updated.", "success");
+    await loadAll(); renderCurrentView();
+  };
+}
+function openAddTheatreModal(bedId, listType){
+  const isRoutine = listType === "Routine";
+  const body =
+    (isRoutine ? '<div class="form-group"><label>Planned surgery date *</label><input type="date" id="th-date" value="'+todayDateStr()+'"></div>' : '') +
+    '<div class="form-group"><label>Anaesthesia mode</label><select id="th-anaes">'+optionsHtml(ANESTHESIA_MODES,"Not decided")+'</select></div>' +
+    '<div class="form-group"><label>Procedure (optional)</label><input type="text" id="th-proc" placeholder="e.g. Lap cholecystectomy"></div>';
+  openModal(isRoutine ? "Add to Routine List" : "Flag for Casualty Theatre", body,
+    '<button class="btn" id="th-cancel">Cancel</button>' +
+    '<button class="btn btn-primary" id="th-save">Save</button>');
+  document.getElementById("th-cancel").onclick = closeModal;
+  document.getElementById("th-save").onclick = async function(){
+    const row = {
+      bed_id: bedId, list_type: listType,
+      anesthesia_mode: document.getElementById("th-anaes").value,
+      procedure_note: document.getElementById("th-proc").value.trim() || null,
+      stage: isRoutine ? "Consultant signed" : "HO flagged"
+    };
+    if (isRoutine){
+      row.planned_date = document.getElementById("th-date").value;
+      if (!row.planned_date){ showToast("Please choose a planned surgery date.", "error"); return; }
+    }
+    const res = await DB.insert("theatre_listings", row);
+    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+    closeModal();
+    showToast(isRoutine ? "Added to routine theatre list." : "Flagged for casualty theatre.", "success");
+    await loadAll();
+    renderCurrentView();
+  };
+}
+
+// ---- REFERRALS ----
+function referralRowHtml(r){
+  const bed = byId(state.beds, r.bed_id);
+  return '<div class="item-row'+(r.completed_at?" done":"")+'" data-referral-id="'+r.id+'">' +
+    '<div class="row-top">' + (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' : '') + '</div>' +
+    '<div class="row-title">'+esc(r.specialty)+'</div>' +
+    (r.reason ? '<div class="row-sub">'+esc(r.reason)+'</div>' : '') +
+    '<div class="row-sub">Requested '+fmtDateTime(r.created_at)+'</div>' +
+    (r.completed_at ? '<div class="row-sub">Called '+fmtDateTime(r.completed_at)+'</div>' : stageTrackHtml(REFERRAL_STAGES, r.stage, null)) +
+    (r.completed_at ? '' : '<div class="row-actions">' + referralActionButtons(r) + '</div>') +
+  '</div>';
+}
+function referralActionButtons(r){
+  const idx = stageIndex(REFERRAL_STAGES, r.stage);
+  if (idx === 0) return '<button class="btn btn-sm ref-advance" data-id="'+r.id+'" data-next="Consultant signed">Consultant signed</button>';
+  if (idx === 1) return '<button class="btn btn-sm btn-success ref-advance" data-id="'+r.id+'" data-next="Called">Mark Called</button>';
+  return "";
+}
+function bindReferralRowActions(container){
+  container.querySelectorAll(".ref-advance").forEach(function(btn){
+    btn.addEventListener("click", async function(){
+      const next = btn.getAttribute("data-next");
+      const patch = { stage: next, updated_at: nowIso() };
+      if (next === "Called") patch.completed_at = nowIso();
+      const res = await DB.update("referrals", btn.getAttribute("data-id"), patch);
+      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+      showToast("Referral updated.", "success");
+      await loadAll(); renderCurrentView();
+    });
+  });
+}
+function openAddReferralModal(bedId){
+  const body =
+    '<div class="form-group"><label>Specialty *</label><select id="rf-specialty">'+optionsHtml(REFERRAL_SPECIALTIES, REFERRAL_SPECIALTIES[0])+'</select></div>' +
+    '<div class="form-group" id="rf-other-wrap" style="display:none;"><label>Specify *</label><input type="text" id="rf-other"></div>' +
+    '<div class="form-group"><label>Reason (optional)</label><input type="text" id="rf-reason" placeholder="e.g. pre-op cardiac assessment"></div>';
   openModal("Add Referral", body,
     '<button class="btn" id="rf-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="rf-save-new">Add referral</button>');
-  const typeSel = document.getElementById("rf-type");
+    '<button class="btn btn-primary" id="rf-save">Add referral</button>');
   const specSel = document.getElementById("rf-specialty");
-  function syncOther(){
+  specSel.addEventListener("change", function(){
     document.getElementById("rf-other-wrap").style.display = specSel.value === "Other" ? "block" : "none";
-  }
-  typeSel.addEventListener("change", function(){ specSel.innerHTML = specialtyOptions(typeSel.value); syncOther(); });
-  specSel.addEventListener("change", syncOther);
+  });
   document.getElementById("rf-cancel").onclick = closeModal;
-  document.getElementById("rf-save-new").onclick = async function(){
+  document.getElementById("rf-save").onclick = async function(){
     let specialty = specSel.value;
     if (specialty === "Other"){
       const other = document.getElementById("rf-other").value.trim();
       if (!other){ showToast("Please specify the specialty.", "error"); return; }
       specialty = other;
     }
+    const existing = bedReferrals(bedId).find(function(r){ return r.specialty === specialty && !r.completed_at; });
+    if (existing){ showToast("A referral to " + specialty + " is already open for this bed.", "error"); return; }
     const res = await DB.insert("referrals", {
-      patient_id: patient.id,
-      referral_type: typeSel.value,
-      specialty: specialty,
-      reason: document.getElementById("rf-reason").value.trim() || null,
-      status: "Requested",
-      recommendation: null
+      bed_id: bedId, specialty: specialty, reason: document.getElementById("rf-reason").value.trim() || null, stage: "Suggested"
     });
     if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    await DB.insert("tasks", {
-      patient_id: patient.id, category: "Referral",
-      description: specialty + " referral (" + typeSel.value + ")",
-      status: "Pending", source_type: "Referral", source_id: res.data.id
-    });
     closeModal();
     showToast("Referral added.", "success");
     await loadAll();
@@ -1462,414 +1132,33 @@ function openAddReferralModal(patient){
   };
 }
 
-// ---- INVESTIGATIONS TAB ----
-function categoryForInvestigation(cat, name){
-  if (cat === "Blood") return "Blood";
-  if (cat === "X-ray" || cat === "Ultrasound") return "Imaging";
-  if (["CT","MRI","Echocardiogram"].indexOf(name) !== -1) return "Imaging";
-  return "General";
-}
-function renderInvestigationsTab(patient){
-  const invs = patientInvestigations(patient.id).slice().sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
-  const list = invs.length ? invs.map(investigationCardHtml).join("") : '<p class="empty-state">No investigations requested.</p>';
-  return '<div class="card"><div class="section-title">Investigations <button class="btn btn-sm btn-primary" id="iv-add">+ Request</button></div>' +
-    '<div id="iv-list">' + list + '</div></div>';
-}
-function investigationCardHtml(i){
-  return '<div class="card" style="box-shadow:none;">' +
-    '<div class="row-top"><div><span class="row-bed-tag">'+esc(i.category)+'</span></div></div>' +
-    '<div class="row-title">'+esc(i.investigation)+'</div>' +
-    '<div class="row-sub">Requested '+fmtDateTime(i.created_at)+'</div>' +
-    '<div class="form-group" style="margin-top:8px;"><label>Status</label><select class="iv-status" data-id="'+i.id+'">'+optionsHtml(INVESTIGATION_STATUSES, i.status)+'</select></div>' +
-    (i.completed_at ? '<div class="row-sub">Reviewed '+fmtDateTime(i.completed_at)+'</div>' : "") +
-  '</div>';
-}
-function bindInvestigationsTab(patient){
-  document.getElementById("iv-add").addEventListener("click", function(){ openAddInvestigationModal(patient); });
-  document.querySelectorAll(".iv-status").forEach(function(sel){
-    sel.addEventListener("change", async function(){
-      const id = sel.getAttribute("data-id");
-      const i = byId(state.investigations, id);
-      const status = sel.value;
-      const patch = { status: status };
-      if (status === "Reviewed") patch.completed_at = nowIso();
-      else patch.completed_at = null;
-      const res = await DB.update("investigations", id, patch);
-      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-      if (status === "Reviewed"){
-        const linkedTask = state.tasks.find(function(t){ return t.source_type === "Investigation" && t.source_id === id; });
-        if (linkedTask && linkedTask.status !== "Done"){
-          await DB.update("tasks", linkedTask.id, { status: "Done", completed_at: nowIso() });
-        }
-      }
-      showToast("Investigation updated.", "success");
-      await loadAll();
-      renderCurrentView();
-    });
-  });
-}
-function openAddInvestigationModal(patient){
-  function presetOptions(cat){ return optionsHtml(INVESTIGATION_PRESETS[cat], INVESTIGATION_PRESETS[cat][0]); }
-  const body =
-    '<div class="form-group"><label>Category *</label><select id="iv-category">'+optionsHtml(INVESTIGATION_CATEGORIES, "Blood")+'</select></div>' +
-    '<div class="form-group"><label>Investigation *</label><select id="iv-preset">'+presetOptions("Blood")+'</select></div>' +
-    '<div class="form-group" id="iv-other-wrap" style="display:none;"><label>Specify *</label><input type="text" id="iv-other" placeholder="e.g. X-ray left tibia AP/lateral"></div>';
-  openModal("Request Investigation", body,
-    '<button class="btn" id="iv-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="iv-save-new">Request</button>');
-  const catSel = document.getElementById("iv-category");
-  const presetSel = document.getElementById("iv-preset");
-  function syncOther(){ document.getElementById("iv-other-wrap").style.display = presetSel.value === "Other" ? "block" : "none"; }
-  catSel.addEventListener("change", function(){ presetSel.innerHTML = presetOptions(catSel.value); syncOther(); });
-  presetSel.addEventListener("change", syncOther);
-  document.getElementById("iv-cancel").onclick = closeModal;
-  document.getElementById("iv-save-new").onclick = async function(){
-    let name = presetSel.value;
-    if (name === "Other"){
-      const other = document.getElementById("iv-other").value.trim();
-      if (!other){ showToast("Please specify the investigation.", "error"); return; }
-      name = other;
-    }
-    const category = catSel.value;
-    const res = await DB.insert("investigations", {
-      patient_id: patient.id, category: category, investigation: name, status: "Requested"
-    });
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    await DB.insert("tasks", {
-      patient_id: patient.id, category: categoryForInvestigation(category, name),
-      description: name, status: "Pending", source_type: "Investigation", source_id: res.data.id
-    });
-    closeModal();
-    showToast("Investigation requested.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-// ---- THEATRE / PRE-OP TAB ----
-function renderTheatreTab(patient){
-  const isYes = !!patient.surgery_today;
-  const checklist = patient.preop_checklist || {};
-  return '<div class="card">' +
-    '<div class="section-title">Surgery planned today?</div>' +
-    '<div class="yesno"><button id="th-yes" class="'+(isYes?"active-yes":"")+'">YES</button><button id="th-no" class="'+(!isYes?"active-no":"")+'">NO</button></div>' +
-    '<div id="th-details" style="margin-top:12px;'+(isYes?"":"display:none;")+'">' +
-      '<div class="form-group"><label>Planned operation</label><input type="text" id="th-operation" value="'+esc(patient.planned_surgery||"")+'" placeholder="e.g. Laparoscopic cholecystectomy"></div>' +
-      '<div class="form-row">' +
-        '<div class="form-group"><label>Surgery date</label><input type="date" id="th-date" value="'+esc(patient.planned_surgery_date||todayDateStr())+'"></div>' +
-        '<div class="form-group"><label>Anaesthesia mode</label><select id="th-anaes">'+optionsHtml(ANESTHESIA_MODES, patient.anesthesia_mode||"Not decided")+'</select></div>' +
-      '</div>' +
-      '<button class="btn btn-primary btn-block" id="th-save">Save theatre details</button>' +
-    '</div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="section-title">Pre-operative checklist</div>' +
-    PREOP_ITEMS.map(function(item){
-      return '<div class="checklist-item"><input type="checkbox" class="preop-check" data-item="'+esc(item)+'" '+(checklist[item]?"checked":"")+'><span>'+esc(item)+'</span></div>';
-    }).join("") +
-    '<div class="form-group" style="margin-top:10px;"><label>Other pre-op instruction</label><textarea id="th-other" placeholder="e.g. Repeat potassium before theatre">'+esc(patient.preop_other||"")+'</textarea></div>' +
-    '<button class="btn btn-primary btn-block" id="th-save-checklist">Save checklist</button>' +
-  '</div>';
-}
-function bindTheatreTab(patient){
-  document.getElementById("th-yes").addEventListener("click", function(){ setSurgeryToday(patient, true); });
-  document.getElementById("th-no").addEventListener("click", function(){ setSurgeryToday(patient, false); });
-  document.getElementById("th-save").addEventListener("click", async function(){
-    const patch = {
-      planned_surgery: document.getElementById("th-operation").value.trim() || null,
-      planned_surgery_date: document.getElementById("th-date").value || null,
-      anesthesia_mode: document.getElementById("th-anaes").value,
-      updated_at: nowIso()
-    };
-    const res = await DB.update("patients", patient.id, patch);
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    showToast("Theatre details saved.", "success");
-    await loadAll();
-    renderCurrentView();
-  });
-  document.getElementById("th-save-checklist").addEventListener("click", async function(){
-    await saveChecklist(patient);
-  });
-}
-async function setSurgeryToday(patient, val){
-  const patch = { surgery_today: val, updated_at: nowIso() };
-  if (val && patient.status !== "Post-op") patch.status = "Pre-op";
-  const res = await DB.update("patients", patient.id, patch);
-  if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-  showToast(val ? "Marked for theatre today." : "Removed from theatre list.", "success");
-  await loadAll();
-  renderCurrentView();
-}
-async function saveChecklist(patient){
-  const checklist = {};
-  document.querySelectorAll(".preop-check").forEach(function(cb){
-    checklist[cb.getAttribute("data-item")] = cb.checked;
-  });
-  const otherText = document.getElementById("th-other").value.trim();
-  const res = await DB.update("patients", patient.id, { preop_checklist: checklist, preop_other: otherText || null, updated_at: nowIso() });
-  if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-
-  // Reconcile jobs: unchecked items get/keep a pending job; checked items complete their job.
-  const existingTasks = patientTasks(patient.id).filter(function(t){ return t.source_type === "Pre-op"; });
-  for (const item of PREOP_ITEMS){
-    const sourceId = patient.id + ":" + item;
-    const existing = existingTasks.find(function(t){ return t.source_id === sourceId; });
-    if (checklist[item]){
-      if (existing && existing.status !== "Done") await DB.update("tasks", existing.id, { status: "Done", completed_at: nowIso() });
-    } else {
-      if (!existing){
-        await DB.insert("tasks", { patient_id: patient.id, category: "Theatre", description: "Pre-op: " + item, status: "Pending", source_type: "Pre-op", source_id: sourceId });
-      } else if (existing.status === "Done"){
-        await DB.update("tasks", existing.id, { status: "Pending", completed_at: null });
-      }
-    }
-  }
-  const otherSourceId = patient.id + ":other";
-  const existingOther = existingTasks.find(function(t){ return t.source_id === otherSourceId; });
-  if (otherText){
-    if (!existingOther){
-      await DB.insert("tasks", { patient_id: patient.id, category: "Theatre", description: "Pre-op: " + otherText, status: "Pending", source_type: "Pre-op", source_id: otherSourceId });
-    } else if (existingOther.description !== "Pre-op: " + otherText){
-      await DB.update("tasks", existingOther.id, { description: "Pre-op: " + otherText });
-    }
-  } else if (existingOther && existingOther.status !== "Done"){
-    await DB.update("tasks", existingOther.id, { status: "Done", completed_at: nowIso() });
-  }
-
-  showToast("Checklist saved.", "success");
-  await loadAll();
-  renderCurrentView();
-}
-
-// ---- POST-OP / DEVICES TAB ----
-function renderPostopTab(patient){
-  const pod = podFor(patient);
-  const devices = patientDevices(patient.id).slice().sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
-  return '<div class="card">' +
-    '<div class="section-title">Operation / Post-op'+(pod!==null?' <span class="badge badge-postop">POD '+pod+'</span>':'')+'</div>' +
-    '<div class="form-group"><label>Actual operation</label><input type="text" id="po-operation" value="'+esc(patient.actual_operation||"")+'" placeholder="e.g. Open appendicectomy"></div>' +
-    '<div class="form-group"><label>Operation date</label><input type="date" id="po-date" value="'+esc(patient.operation_date||"")+'"></div>' +
-    '<div class="form-group"><label>Post-op management</label><textarea id="po-management" placeholder="IV antibiotics\nClear fluids\nMobilise">'+esc(patient.post_op_management||"")+'</textarea></div>' +
-    '<button class="btn btn-primary btn-block" id="po-save">Save</button>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="section-title">Devices <button class="btn btn-sm btn-primary" id="dv-add">+ Add device</button></div>' +
-    (devices.length ? devices.map(deviceRowHtml).join("") : '<p class="empty-state">No devices recorded.</p>') +
-  '</div>';
-}
-function deviceRowHtml(d){
-  return '<div class="job-row'+(d.active?"":" done")+'">' +
-    '<div class="row-top"><div><span class="row-bed-tag">'+esc(d.device_type)+'</span></div>' +
-    (d.active ? '<button class="btn btn-sm btn-danger dv-remove" data-id="'+d.id+'">Mark removed</button>' : '<span class="row-sub">Removed '+fmtDateTime(d.removed_at)+'</span>') +
-    '</div>' +
-    (d.note ? '<div class="row-title">'+esc(d.note)+'</div>' : "") +
-    '<div class="row-sub">'+(d.active?"Active":"Removed")+' &middot; Inserted '+fmtDateTime(d.inserted_at)+'</div>' +
-  '</div>';
-}
-function bindPostopTab(patient){
-  document.getElementById("po-save").addEventListener("click", async function(){
-    const operation = document.getElementById("po-operation").value.trim();
-    const opDate = document.getElementById("po-date").value;
-    const patch = {
-      actual_operation: operation || null,
-      operation_date: opDate || null,
-      post_op_management: document.getElementById("po-management").value.trim() || null,
-      updated_at: nowIso()
-    };
-    if (operation && opDate) { patch.status = "Post-op"; patch.surgery_today = false; }
-    const res = await DB.update("patients", patient.id, patch);
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    showToast("Post-op details saved.", "success");
-    await loadAll();
-    renderCurrentView();
-  });
-  document.getElementById("dv-add").addEventListener("click", function(){ openAddDeviceModal(patient); });
-  document.querySelectorAll(".dv-remove").forEach(function(btn){
-    btn.addEventListener("click", async function(){
-      const id = btn.getAttribute("data-id");
-      const res = await DB.update("devices", id, { active: false, removed_at: nowIso() });
-      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-      showToast("Device marked removed.", "success");
-      await loadAll();
-      renderCurrentView();
-    });
-  });
-}
-function openAddDeviceModal(patient){
-  const body =
-    '<div class="form-group"><label>Device type *</label><select id="dv-type">'+optionsHtml(DEVICE_TYPES, DEVICE_TYPES[0])+'</select></div>' +
-    '<div class="form-group"><label>Note</label><input type="text" id="dv-note" placeholder="e.g. Right subhepatic drain"></div>' +
-    '<div class="form-group"><label>Inserted date/time</label><input type="datetime-local" id="dv-inserted" value="'+todayDateStr()+'T'+nowTimeStr()+'"></div>';
-  openModal("Add Device", body,
-    '<button class="btn" id="dv-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="dv-save-new">Add device</button>');
-  document.getElementById("dv-cancel").onclick = closeModal;
-  document.getElementById("dv-save-new").onclick = async function(){
-    const insertedVal = document.getElementById("dv-inserted").value;
-    const res = await DB.insert("devices", {
-      patient_id: patient.id,
-      device_type: document.getElementById("dv-type").value,
-      note: document.getElementById("dv-note").value.trim() || null,
-      active: true,
-      inserted_at: insertedVal ? new Date(insertedVal).toISOString() : nowIso()
-    });
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Device added.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
-// ---- DISCHARGE / TRANSFER TAB ----
-function renderDischargeTab(patient){
-  const isYes = !!patient.for_discharge;
-  const reviewReq = !!patient.discharge_review_required;
-  return '<div class="card">' +
-    '<div class="section-title">For discharge?</div>' +
-    '<div class="yesno"><button id="ds-yes" class="'+(isYes?"active-yes":"")+'">YES</button><button id="ds-no" class="'+(!isYes?"active-no":"")+'">NO</button></div>' +
-    '<div id="ds-details" style="margin-top:12px;'+(isYes?"":"display:none;")+'">' +
-      '<div class="form-group"><label>Referral included?</label>' +
-        '<div class="yesno"><button id="ds-ref-yes" class="'+(patient.discharge_referral_included?"active-yes":"")+'">YES</button><button id="ds-ref-no" class="'+(!patient.discharge_referral_included?"active-no":"")+'">NO</button></div></div>' +
-      '<div class="form-group"><label>Review required?</label>' +
-        '<div class="yesno"><button id="ds-rev-yes" class="'+(reviewReq?"active-yes":"")+'">YES</button><button id="ds-rev-no" class="'+(!reviewReq?"active-no":"")+'">NO</button></div></div>' +
-      '<div id="ds-review-fields" style="'+(reviewReq?"":"display:none;")+'">' +
-        '<div class="form-group"><label>Review where?</label><select id="ds-where">'+optionsHtml(["Ward","Clinic","Other"], patient.discharge_review_where||"Ward")+'</select></div>' +
-        '<div class="form-group"><label>When to review?</label><input type="text" id="ds-when" value="'+esc(patient.discharge_review_when||"")+'" placeholder="e.g. 2 weeks"></div>' +
-      '</div>' +
-      '<div class="form-group"><label>Discharge instructions</label><textarea id="ds-instructions" placeholder="e.g. Dressing at local hospital">'+esc(patient.discharge_instructions||"")+'</textarea></div>' +
-      '<button class="btn btn-primary btn-block" id="ds-save">Save discharge plan</button>' +
-      '<button class="btn btn-danger btn-block" style="margin-top:8px;" id="ds-mark-discharged">Mark Discharged</button>' +
-    '</div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="section-title">Transfer</div>' +
-    '<div class="form-group"><label>Destination</label><select id="tr-dest">'+optionsHtml(TRANSFER_DESTINATIONS, patient.transfer_destination||TRANSFER_DESTINATIONS[0])+'</select></div>' +
-    '<div class="form-group"><label>Status</label><select id="tr-status">'+optionsHtml(TRANSFER_STATUSES, patient.transfer_status||"Pending")+'</select></div>' +
-    '<div class="form-group"><label>Transfer note</label><textarea id="tr-note" placeholder="Free text">'+esc(patient.transfer_note||"")+'</textarea></div>' +
-    '<button class="btn btn-primary btn-block" id="tr-save">Save transfer</button>' +
-  '</div>';
-}
-function bindDischargeTab(patient){
-  document.getElementById("ds-yes").addEventListener("click", function(){ togglePatientFlag(patient, "for_discharge", true); });
-  document.getElementById("ds-no").addEventListener("click", function(){ togglePatientFlag(patient, "for_discharge", false); });
-  document.getElementById("ds-ref-yes").addEventListener("click", function(){ patient.discharge_referral_included = true; renderPatientView(); });
-  document.getElementById("ds-ref-no").addEventListener("click", function(){ patient.discharge_referral_included = false; renderPatientView(); });
-  document.getElementById("ds-rev-yes").addEventListener("click", function(){ patient.discharge_review_required = true; renderPatientView(); });
-  document.getElementById("ds-rev-no").addEventListener("click", function(){ patient.discharge_review_required = false; renderPatientView(); });
-  document.getElementById("ds-save").addEventListener("click", async function(){
-    const reviewReq = !!patient.discharge_review_required;
-    const patch = {
-      discharge_referral_included: !!patient.discharge_referral_included,
-      discharge_review_required: reviewReq,
-      discharge_review_where: reviewReq ? document.getElementById("ds-where").value : null,
-      discharge_review_when: reviewReq ? document.getElementById("ds-when").value.trim() || null : null,
-      discharge_instructions: document.getElementById("ds-instructions").value.trim() || null,
-      status: "For discharge",
-      updated_at: nowIso()
-    };
-    const res = await DB.update("patients", patient.id, patch);
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    showToast("Discharge plan saved.", "success");
-    await loadAll();
-    renderCurrentView();
-  });
-  document.getElementById("ds-mark-discharged").addEventListener("click", function(){
-    confirmAction("Mark " + patient.name + " (Bed " + bedLabel(patient.bed_id) + ") as discharged? The bed will become empty.", async function(){
-      const res = await DB.update("patients", patient.id, {
-        active: false, status: "Discharged", discharged_at: nowIso(), bed_id: null, updated_at: nowIso()
-      });
-      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-      showToast(patient.name + " discharged.", "success");
-      state.currentPatientId = null;
-      await loadAll();
-      switchView("ward");
-    });
-  });
-  document.getElementById("tr-save").addEventListener("click", async function(){
-    const status = document.getElementById("tr-status").value;
-    const dest = document.getElementById("tr-dest").value;
-    const note = document.getElementById("tr-note").value.trim() || null;
-    if (status === "Transferred"){
-      confirmAction("Mark " + patient.name + " (Bed " + bedLabel(patient.bed_id) + ") as transferred to " + dest + "? The bed will become empty.", async function(){
-        const res = await DB.update("patients", patient.id, {
-          transfer_destination: dest, transfer_status: status, transfer_note: note,
-          active: false, status: "Transferred", bed_id: null, updated_at: nowIso()
-        });
-        if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-        showToast(patient.name + " transferred.", "success");
-        state.currentPatientId = null;
-        await loadAll();
-        switchView("ward");
-      });
-    } else {
-      const res = await DB.update("patients", patient.id, {
-        transfer_destination: dest, transfer_status: status, transfer_note: note, updated_at: nowIso()
-      });
-      if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-      showToast("Transfer details saved.", "success");
-      await loadAll();
-      renderCurrentView();
-    }
-  });
-}
-async function togglePatientFlag(patient, field, val){
-  const patch = { updated_at: nowIso() };
-  patch[field] = val;
-  const res = await DB.update("patients", patient.id, patch);
-  if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-  await loadAll();
-  renderCurrentView();
-}
-
 // ============================================================================
-// GLOBAL JOBS VIEW
+// GLOBAL SCANS VIEW
 // ============================================================================
-function renderJobsView(){
-  const term = state.jobsSearch.trim().toLowerCase();
-  const filter = state.jobsFilter;
-  let tasks = state.tasks.slice();
-  if (filter === "outstanding") tasks = tasks.filter(function(t){ return t.status === "Pending"; });
-  else if (filter === "done") tasks = tasks.filter(function(t){ return t.status === "Done"; });
-
-  if (term){
-    tasks = tasks.filter(function(t){
-      const p = byId(state.patients, t.patient_id);
-      const hay = (t.description + " " + t.category + " " + (p?p.name:"") + " " + (p?bedLabel(p.bed_id):"")).toLowerCase();
-      return hay.indexOf(term) !== -1;
-    });
-  }
-  tasks.sort(function(a,b){
-    if ((a.status==="Pending") !== (b.status==="Pending")) return a.status==="Pending" ? -1 : 1;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-
-  const list = document.getElementById("jobs-list");
-  if (tasks.length === 0){
-    list.innerHTML = '<p class="empty-state">No outstanding jobs.</p>';
-    return;
-  }
-  list.innerHTML = tasks.map(function(t){
-    const p = byId(state.patients, t.patient_id);
-    return '<div class="job-row'+(t.status==="Done"?" done":"")+'">' +
-      '<div class="row-top"><div>' +
-        '<span class="row-bed-tag">Bed '+(p?esc(bedLabel(p.bed_id)):"?")+'</span> ' +
-        '<span class="row-sub">'+(p?esc(p.name):"Unknown patient")+'</span>' +
-      '</div></div>' +
-      '<div class="row-title">'+esc(t.description)+'</div>' +
-      '<div class="row-sub">'+esc(t.category)+' &middot; '+t.status+'</div>' +
-      '<div class="row-actions">' +
-        '<button class="btn btn-sm '+(t.status==="Done"?"":"btn-success")+' gj-toggle" data-id="'+t.id+'">'+(t.status==="Done"?"Mark pending":"DONE")+'</button>' +
-        (p ? '<button class="btn btn-sm gj-open" data-pid="'+p.id+'">OPEN PATIENT</button>' : '') +
+function renderScansView(){
+  const isToday = true;
+  document.getElementById("scan-banner").className = "info-banner";
+  const open = state.scans.filter(function(s){ return !s.completed_at; })
+    .sort(function(a,b){ return stageIndex(SCAN_STAGES,a.stage) - stageIndex(SCAN_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
+  const list = document.getElementById("scans-list");
+  if (open.length === 0){ list.innerHTML = '<p class="empty-state">No outstanding scan requests.</p>'; return; }
+  list.innerHTML = open.map(function(s){
+    const bed = byId(state.beds, s.bed_id);
+    return '<div class="item-row">' +
+      '<div class="row-top">' + (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' : '') + '<span class="row-sub">'+esc(s.scan_type)+'</span></div>' +
+      (s.details ? '<div class="row-title">'+esc(s.details)+'</div>' : '') +
+      stageTrackHtml(SCAN_STAGES.slice(0,3), s.stage, "Sent") +
+      '<div class="row-actions">' + scanActionButtons(s) +
+        (bed ? '<button class="btn btn-sm gv-open" data-bed-id="'+bed.id+'">OPEN BED</button>' : '') +
       '</div>' +
     '</div>';
   }).join("");
-
-  list.querySelectorAll(".gj-toggle").forEach(function(btn){
-    btn.addEventListener("click", function(){ toggleTaskStatus(btn.getAttribute("data-id")); });
-  });
-  list.querySelectorAll(".gj-open").forEach(function(btn){
-    btn.addEventListener("click", function(){ openPatientView(btn.getAttribute("data-pid")); });
+  bindScanRowActions(list);
+  bindOpenBedButtons(list);
+}
+function bindOpenBedButtons(container){
+  container.querySelectorAll(".gv-open").forEach(function(btn){
+    btn.addEventListener("click", function(){ openBedWorkspace(btn.getAttribute("data-bed-id")); });
   });
 }
 
@@ -1877,71 +1166,89 @@ function renderJobsView(){
 // GLOBAL THEATRE VIEW
 // ============================================================================
 function renderTheatreView(){
-  const patients = state.patients.filter(function(p){ return p.surgery_today; });
-  const list = document.getElementById("theatre-list");
-  if (patients.length === 0){
-    list.innerHTML = '<p class="empty-state">Nobody is marked for theatre today.</p>';
-    return;
+  const todayIsRoutine = isRoutineTheatreDayToday();
+  const todayName = WEEKDAY_NAMES[new Date().getDay()];
+  const banner = document.getElementById("theatre-banner");
+  if (todayIsRoutine){
+    banner.className = "info-banner";
+    banner.textContent = "Today (" + todayName + ") is a routine theatre day — list starts 8:00 AM.";
+  } else {
+    banner.className = "info-banner off";
+    banner.textContent = "Today (" + todayName + ") has no routine list — casualty theatre only.";
   }
-  list.innerHTML = patients.map(function(p){
-    const checklist = p.preop_checklist || {};
-    const checks = PREOP_ITEMS.map(function(item){
-      return '<span style="margin-right:10px;font-size:0.8rem;">'+(checklist[item]?"&#10003;":"&#9675;")+' '+esc(item)+'</span>';
-    }).join("");
-    return '<div class="theatre-row">' +
-      '<div class="row-top"><div>' +
-        '<span class="row-bed-tag">Bed '+esc(bedLabel(p.bed_id))+'</span> <span class="row-sub">'+esc(p.name)+'</span>' +
-      '</div></div>' +
-      '<div class="row-title">'+esc(p.diagnosis)+'</div>' +
-      '<div class="row-sub" style="font-weight:700;color:var(--purple);">'+esc(p.planned_surgery||"Operation not specified")+'</div>' +
-      '<div style="margin-top:8px;line-height:1.8;">'+checks+'</div>' +
-      '<div class="row-actions"><button class="btn btn-sm th-open" data-pid="'+p.id+'">OPEN PATIENT</button></div>' +
+
+  const routine = state.theatreListings.filter(function(t){ return t.list_type === "Routine" && !t.completed_at; })
+    .sort(function(a,b){ return new Date(a.planned_date) - new Date(b.planned_date); });
+  const routineList = document.getElementById("routine-list");
+  routineList.innerHTML = routine.length ? routine.map(function(t){ return theatreRowHtml(t, true); }).join("") : '<p class="empty-state">Nobody is currently on the routine theatre list.</p>';
+  bindTheatreRowActions(routineList); bindOpenBedButtons(routineList);
+
+  const casualty = state.theatreListings.filter(function(t){ return t.list_type === "Casualty" && !t.completed_at; })
+    .sort(function(a,b){ return stageIndex(THEATRE_STAGES,a.stage) - stageIndex(THEATRE_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
+  const casualtyList = document.getElementById("casualty-list");
+  casualtyList.innerHTML = casualty.length ? casualty.map(function(t){ return theatreRowHtml(t, true); }).join("") : '<p class="empty-state">Nobody is currently flagged for casualty theatre.</p>';
+  bindTheatreRowActions(casualtyList); bindOpenBedButtons(casualtyList);
+}
+
+// ============================================================================
+// GLOBAL REFERRALS VIEW
+// ============================================================================
+function renderReferralsView(){
+  const open = state.referrals.filter(function(r){ return !r.completed_at; })
+    .sort(function(a,b){ return stageIndex(REFERRAL_STAGES,a.stage) - stageIndex(REFERRAL_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
+  const list = document.getElementById("referrals-list");
+  if (open.length === 0){ list.innerHTML = '<p class="empty-state">No outstanding referrals.</p>'; return; }
+  list.innerHTML = open.map(function(r){
+    const bed = byId(state.beds, r.bed_id);
+    return '<div class="item-row">' +
+      '<div class="row-top">' + (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' : '') + '</div>' +
+      '<div class="row-title">'+esc(r.specialty)+'</div>' +
+      (r.reason ? '<div class="row-sub">'+esc(r.reason)+'</div>' : '') +
+      stageTrackHtml(REFERRAL_STAGES, r.stage, null) +
+      '<div class="row-actions">' + referralActionButtons(r) + (bed ? '<button class="btn btn-sm gv-open" data-bed-id="'+bed.id+'">OPEN BED</button>' : '') + '</div>' +
     '</div>';
   }).join("");
-  list.querySelectorAll(".th-open").forEach(function(btn){
-    btn.addEventListener("click", function(){ openPatientView(btn.getAttribute("data-pid")); });
-  });
+  bindReferralRowActions(list);
+  bindOpenBedButtons(list);
 }
 
 // ============================================================================
 // GLOBAL DISCHARGES VIEW
 // ============================================================================
 function renderDischargesView(){
-  const patients = state.patients.filter(function(p){ return p.for_discharge; });
+  const beds = state.beds.filter(function(b){ return b.for_discharge; });
   const list = document.getElementById("discharges-list");
-  if (patients.length === 0){
-    list.innerHTML = '<p class="empty-state">No patients currently marked for discharge.</p>';
-    return;
-  }
-  list.innerHTML = patients.map(function(p){
-    const jobs = pendingTaskCount(p.id);
-    const pod = podFor(p);
-    return '<div class="discharge-row">' +
-      '<div class="row-top"><div>' +
-        '<span class="row-bed-tag">Bed '+esc(bedLabel(p.bed_id))+'</span> <span class="row-sub">'+esc(p.name)+'</span>' +
-      '</div></div>' +
-      '<div class="row-title">'+esc(p.diagnosis)+(pod!==null?' &middot; POD '+pod:'')+'</div>' +
-      '<div class="row-sub">'+(p.discharge_review_required ? (esc(p.discharge_review_where||"Review")+" review "+esc(p.discharge_review_when||"")) : "No review specified")+'</div>' +
-      '<div class="row-sub">'+jobs+(jobs===1?" job remaining":" jobs remaining")+'</div>' +
+  if (beds.length === 0){ list.innerHTML = '<p class="empty-state">No beds currently marked for discharge.</p>'; return; }
+  list.innerHTML = beds.map(function(b){
+    const openItems = openScanCount(b.id) + openTheatreCount(b.id) + openReferralCount(b.id);
+    return '<div class="item-row">' +
+      '<div class="row-top"><span class="row-bed-tag">Bed '+esc(b.label)+'</span></div>' +
+      '<div class="row-sub">Marked for discharge '+fmtDateTime(b.discharge_marked_at)+'</div>' +
+      (openItems > 0 ? '<div class="row-sub">'+openItems+' open item(s) still pending</div>' : '<div class="row-sub">No open items</div>') +
       '<div class="row-actions">' +
-        '<button class="btn btn-sm ds-open" data-pid="'+p.id+'">OPEN PATIENT</button>' +
-        '<button class="btn btn-sm btn-danger ds-discharge" data-pid="'+p.id+'">MARK DISCHARGED</button>' +
+        '<button class="btn btn-sm gv-open" data-bed-id="'+b.id+'">OPEN BED</button>' +
+        '<button class="btn btn-sm btn-danger ds-vacate" data-bed-id="'+b.id+'">MARK BED EMPTY</button>' +
       '</div>' +
     '</div>';
   }).join("");
-  list.querySelectorAll(".ds-open").forEach(function(btn){
-    btn.addEventListener("click", function(){ openPatientView(btn.getAttribute("data-pid")); });
-  });
-  list.querySelectorAll(".ds-discharge").forEach(function(btn){
+  bindOpenBedButtons(list);
+  list.querySelectorAll(".ds-vacate").forEach(function(btn){
     btn.addEventListener("click", function(){
-      const p = byId(state.patients, btn.getAttribute("data-pid"));
-      confirmAction("Mark " + p.name + " (Bed " + bedLabel(p.bed_id) + ") as discharged? The bed will become empty.", async function(){
-        const res = await DB.update("patients", p.id, { active: false, status: "Discharged", discharged_at: nowIso(), bed_id: null, updated_at: nowIso() });
+      const bed = byId(state.beds, btn.getAttribute("data-bed-id"));
+      const openItems = openScanCount(bed.id) + openTheatreCount(bed.id) + openReferralCount(bed.id);
+      const doVacate = async function(){
+        const res = await DB.update("beds", bed.id, { occupied:false, occupied_since:null, for_discharge:false, discharge_marked_at:null });
         if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-        showToast(p.name + " discharged.", "success");
+        await Promise.all([
+          DB.removeWhere("scans", "bed_id", bed.id),
+          DB.removeWhere("theatre_listings", "bed_id", bed.id),
+          DB.removeWhere("referrals", "bed_id", bed.id)
+        ]);
+        showToast("Bed " + bed.label + " is now empty.", "success");
         await loadAll();
         renderCurrentView();
-      });
+      };
+      confirmAction("Mark Bed " + bed.label + " as empty?" + (openItems>0 ? " This clears " + openItems + " open item(s)." : ""), doVacate);
     });
   });
 }
@@ -1953,57 +1260,8 @@ function renderSettingsView(){
   document.getElementById("settings-conn-info").innerHTML = USE_SUPABASE
     ? '<span class="conn-dot"></span>Connected to Supabase.'
     : '<span class="conn-dot off"></span>Demo mode — data is only saved in this browser (localStorage). Configure SUPABASE_URL / SUPABASE_KEY at the top of index.html to use a real database.';
-
-  const staffList = document.getElementById("staff-list");
-  if (state.staff.length === 0){
-    staffList.innerHTML = '<p class="empty-state">No staff saved yet.</p>';
-  } else {
-    staffList.innerHTML = state.staff.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(s){
-      return '<div class="staff-row"><div><strong>'+esc(s.name)+'</strong> <span class="staff-role-tag">'+esc(s.role)+'</span></div>' +
-        '<div><button class="btn btn-sm st-edit" data-id="'+s.id+'">Edit</button> <button class="btn btn-sm btn-danger st-remove" data-id="'+s.id+'">Remove</button></div></div>';
-    }).join("");
-    staffList.querySelectorAll(".st-edit").forEach(function(btn){ btn.addEventListener("click", function(){ openStaffModal(byId(state.staff, btn.getAttribute("data-id"))); }); });
-    staffList.querySelectorAll(".st-remove").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        const s = byId(state.staff, btn.getAttribute("data-id"));
-        confirmAction("Remove " + s.name + " from the staff list? Past rounds already saved will keep showing their name.", async function(){
-          const res = await DB.remove("staff", s.id);
-          if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-          showToast("Staff member removed.", "success");
-          await loadAll();
-          renderCurrentView();
-        });
-      });
-    });
-  }
-
   renderLayoutTable();
 }
-
-function openStaffModal(staff){
-  const isEdit = !!staff;
-  const body =
-    '<div class="form-group"><label>Name *</label><input type="text" id="stf-name" value="'+(isEdit?esc(staff.name):"")+'"></div>' +
-    '<div class="form-group"><label>Role *</label><select id="stf-role">'+optionsHtml(["Consultant","Registrar","SHO"], isEdit?staff.role:"SHO")+'</select></div>';
-  openModal(isEdit ? "Edit Doctor" : "Add Doctor", body,
-    '<button class="btn" id="stf-cancel">Cancel</button>' +
-    '<button class="btn btn-primary" id="stf-save">Save</button>');
-  document.getElementById("stf-cancel").onclick = closeModal;
-  document.getElementById("stf-save").onclick = async function(){
-    const name = document.getElementById("stf-name").value.trim();
-    if (!name){ showToast("Name is required.", "error"); return; }
-    const role = document.getElementById("stf-role").value;
-    const res = isEdit
-      ? await DB.update("staff", staff.id, { name: name, role: role })
-      : await DB.insert("staff", { name: name, role: role });
-    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
-    closeModal();
-    showToast("Staff saved.", "success");
-    await loadAll();
-    renderCurrentView();
-  };
-}
-
 function renderLayoutTable(){
   const tbody = document.getElementById("layout-table-body");
   const beds = state.beds.slice().sort(function(a,b){
@@ -2018,8 +1276,6 @@ function renderLayoutTable(){
     '</tr>';
   }).join("");
 }
-
-document.getElementById("btn-add-staff").addEventListener("click", function(){ openStaffModal(null); });
 document.getElementById("btn-save-layout").addEventListener("click", async function(){
   const rows = document.querySelectorAll("#layout-table-body tr");
   const btn = document.getElementById("btn-save-layout");
@@ -2056,37 +1312,28 @@ function switchView(view){
   window.scrollTo(0,0);
   renderCurrentView();
 }
-
 function renderCurrentView(){
   switch(state.currentView){
     case "ward": renderWard(); break;
-    case "jobs": renderJobsView(); break;
+    case "scans": renderScansView(); break;
     case "theatre": renderTheatreView(); break;
+    case "referrals": renderReferralsView(); break;
     case "discharges": renderDischargesView(); break;
     case "settings": renderSettingsView(); break;
-    case "patient": renderPatientView(); break;
+    case "bed": renderBedWorkspace(); break;
   }
-  // Always keep the nav job counter fresh regardless of active view.
-  const s = computeWardSummary();
-  const navCount = document.getElementById("nav-jobs-count");
-  if (s.pendingJobs > 0){ navCount.hidden = false; navCount.textContent = s.pendingJobs; }
-  else { navCount.hidden = true; }
+  updateNavCounts();
 }
-
 document.getElementById("main-nav").addEventListener("click", function(e){
   const btn = e.target.closest(".nav-btn");
   if (!btn) return;
   switchView(btn.getAttribute("data-view"));
 });
-
 document.getElementById("btn-refresh").addEventListener("click", async function(){
   showToast("Refreshing...", "");
   await loadAll();
   renderCurrentView();
 });
-
-document.getElementById("btn-new-admission").addEventListener("click", function(){ openAdmissionModal(null); });
-
 document.getElementById("ward-search").addEventListener("input", function(e){
   state.wardSearch = e.target.value;
   renderWardGrid();
@@ -2095,16 +1342,6 @@ document.getElementById("ward-filter").addEventListener("change", function(e){
   state.wardFilter = e.target.value;
   renderWardGrid();
 });
-document.getElementById("jobs-search").addEventListener("input", function(e){
-  state.jobsSearch = e.target.value;
-  renderJobsView();
-});
-document.getElementById("jobs-filter").addEventListener("change", function(e){
-  state.jobsFilter = e.target.value;
-  renderJobsView();
-});
-
-// Keyboard shortcut: "/" focuses ward search (desktop), unless typing already.
 document.addEventListener("keydown", function(e){
   if (e.key !== "/") return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
