@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Surgical Ward Tracker</title>
-<meta name="description" content="Bed-based scan, theatre, referral and discharge tracker for a 54-bed male surgical ward">
+<meta name="description" content="Bed-based scan, theatre, referral and discharge tracker for a Male (54-bed) and Female (40-bed) surgical ward">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ==========================================================================
@@ -70,9 +70,20 @@ input,select,textarea{font-family:inherit;font-size:1rem;}
 .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;}
 .conn-dot.off{background:var(--red);}
 
+.ward-switch{
+  display:flex;gap:6px;padding:8px 8px;background:var(--card);
+  position:sticky;top:53px;z-index:19;border-bottom:1px solid var(--border);
+}
+.ward-switch-btn{
+  flex:1;padding:9px 8px;border-radius:8px;border:1px solid var(--border-strong);background:#fff;
+  font-weight:700;font-size:0.82rem;cursor:pointer;color:var(--text-muted);min-height:40px;
+}
+.ward-switch-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.ward-switch-btn .ws-sub{display:block;font-weight:600;font-size:0.68rem;opacity:0.8;}
+
 .mainnav{
   display:flex;gap:2px;padding:6px 8px;background:var(--card);border-bottom:1px solid var(--border);
-  position:sticky;top:53px;z-index:19;overflow-x:auto;
+  position:sticky;top:109px;z-index:18;overflow-x:auto;
 }
 .nav-btn{
   flex:1 1 auto;white-space:nowrap;background:none;border:none;padding:8px 6px;border-radius:8px;
@@ -220,6 +231,10 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 .muted{color:var(--text-muted);}
 .small{font-size:0.78rem;}
 
+/* Bed picker (Assign Bed) */
+.bedpicker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:340px;overflow-y:auto;padding:4px;}
+.bedpick{border:1px solid var(--border-strong);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;background:var(--green-bg);color:var(--green);font-size:0.75rem;font-weight:700;}
+
 @media(max-width:480px){
   .topbar{padding:10px 12px;}
   .topbar-left h1{font-size:0.98rem;}
@@ -242,6 +257,11 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
     <button class="btn btn-ghost btn-sm" id="btn-refresh" title="Reload latest data">&#8635; Refresh</button>
   </div>
 </header>
+
+<div class="ward-switch" id="ward-switch">
+  <button class="ward-switch-btn active" data-ward="Male">Male Ward<span class="ws-sub" id="ws-male-sub">54 beds</span></button>
+  <button class="ward-switch-btn" data-ward="Female">Female Ward<span class="ws-sub" id="ws-female-sub">40 beds</span></button>
+</div>
 
 <nav class="mainnav" id="main-nav">
   <button class="nav-btn active" data-view="ward">Ward</button>
@@ -281,7 +301,7 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
   <!-- ============================== THEATRE VIEW ============================== -->
   <section class="view" id="view-theatre">
     <div class="info-banner" id="theatre-banner"></div>
-    <h2 class="section-title">Routine theatre list (Mon / Wed / Fri)</h2>
+    <h2 class="section-title">Routine theatre list (Mon / Wed / Fri) <button class="btn btn-sm btn-primary" id="btn-new-routine-booking">+ New Booking</button></h2>
     <div id="routine-list"></div>
     <h2 class="section-title" style="margin-top:18px;">Casualty theatre (today)</h2>
     <div id="casualty-list"></div>
@@ -306,7 +326,7 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
     </div>
     <div class="card">
       <div class="section-title">Ward Layout <button class="btn btn-sm btn-primary" id="btn-save-layout">Save Layout</button></div>
-      <p class="small muted" style="margin-bottom:10px;">Set the row, column and zone for each bed so the ward map matches the real ward. Leave gaps in numbering for aisles, entrances or the nurses' station.</p>
+      <p class="small muted" style="margin-bottom:10px;" id="settings-layout-note">Set the row, column and zone for each bed so the ward map matches the real ward. Leave gaps in numbering for aisles, entrances or the nurses' station. This edits whichever ward is selected at the top of the screen.</p>
       <div class="layout-scroll">
         <table class="layout-table">
           <thead><tr><th>Bed</th><th>Row</th><th>Column</th><th>Zone</th></tr></thead>
@@ -384,8 +404,8 @@ main{max-width:1200px;margin:0 auto;padding:14px;}
 // publishable (anon) key. Find them in Supabase: Project Settings -> API.
 // Never put your service_role key here — see README.md.
 // ============================================================================
-const SUPABASE_URL = "https://knhzdjbleeggdmhnpdnb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1o3a9qb3SdWcht6IpKvcpg_v6_b8YbP";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
 
 const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_KEY &&
   SUPABASE_URL.indexOf("YOUR_SUPABASE") === -1 &&
@@ -393,8 +413,10 @@ const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_KEY &&
   SUPABASE_URL.indexOf("supabase.co") !== -1);
 let USE_SUPABASE = false;
 
-const TOTAL_BEDS = 54;
-const LOCAL_KEY = "wardTrackerDemoDB_v2";
+const WARD_NAMES = ["Male","Female"];
+const WARD_BED_COUNTS = { Male: 54, Female: 40 };
+const WARD_GRID_COLS = { Male: 6, Female: 5 };
+const LOCAL_KEY = "wardTrackerDemoDB_v3";
 const TABLES = ["beds","scans","theatre_listings","referrals"];
 
 const SCAN_TYPES = ["USS","X-ray","CT","Other"];
@@ -415,6 +437,7 @@ const state = {
   theatreListings: [],
   referrals: [],
   currentView: "ward",
+  currentWard: "Male",
   currentBedId: null,
   wardSearch: "",
   wardFilter: "all",
@@ -489,6 +512,9 @@ function openReferralCount(bedId){ return bedReferrals(bedId).filter(function(r)
 function isRoutineTheatreDayToday(){ return ROUTINE_THEATRE_DAYS.indexOf(new Date().getDay()) !== -1; }
 function stageIndex(stages, stage){ return stages.indexOf(stage); }
 
+function currentWardBeds(){ return state.beds.filter(function(b){ return b.ward === state.currentWard; }); }
+function bedWard(bedId){ const b = byId(state.beds, bedId); return b ? b.ward : null; }
+
 // ============================================================================
 // DB ABSTRACTION (Supabase or localStorage demo mode)
 // ============================================================================
@@ -508,11 +534,15 @@ function saveLocalDB(){
 }
 function seedLocalBeds(){
   const beds = [];
-  for (let i=1;i<=TOTAL_BEDS;i++){
-    const row = Math.floor((i-1)/6)+1;
-    const col = ((i-1)%6)+1;
-    beds.push({ id: uuid(), label: String(i), row_no: row, col_no: col, zone: "Main ward", occupied:false, occupied_since:null, for_discharge:false, discharge_marked_at:null, created_at: nowIso() });
-  }
+  WARD_NAMES.forEach(function(ward){
+    const total = WARD_BED_COUNTS[ward];
+    const cols = WARD_GRID_COLS[ward];
+    for (let i=1;i<=total;i++){
+      const row = Math.floor((i-1)/cols)+1;
+      const col = ((i-1)%cols)+1;
+      beds.push({ id: uuid(), label: String(i), row_no: row, col_no: col, zone: "Main ward", ward: ward, occupied:false, occupied_since:null, for_discharge:false, discharge_marked_at:null, created_at: nowIso() });
+    }
+  });
   localDB.beds = beds;
 }
 
@@ -548,7 +578,10 @@ const DB = {
       return { data: res.data, error: res.error };
     } else {
       // Emulate the theatre_open_unique partial unique index in demo mode.
-      if (table === "theatre_listings" && !record.completed_at){
+      // Rows with bed_id still null (pre-admission bookings) are never
+      // duplicates of each other or of anything else, matching the real
+      // Postgres partial unique index's NULL-is-distinct behaviour.
+      if (table === "theatre_listings" && !record.completed_at && record.bed_id){
         const clash = localDB.theatre_listings.find(function(t){
           return t.bed_id === record.bed_id && t.list_type === record.list_type && !t.completed_at;
         });
@@ -719,17 +752,26 @@ function updateCurrentDate(){
   document.getElementById("current-date").textContent = d.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
 }
 function computeWardSummary(){
-  const occupied = state.beds.filter(function(b){ return b.occupied; }).length;
-  const empty = state.beds.length - occupied;
-  const scansPending = state.scans.filter(function(s){ return !s.completed_at; }).length;
+  const beds = currentWardBeds();
+  const bedIds = beds.map(function(b){ return b.id; });
+  const occupied = beds.filter(function(b){ return b.occupied; }).length;
+  const empty = beds.length - occupied;
+  const scansPending = state.scans.filter(function(s){ return !s.completed_at && bedIds.indexOf(s.bed_id) !== -1; }).length;
   const theatreToday = state.theatreListings.filter(function(t){
     if (t.completed_at) return false;
+    if (t.ward !== state.currentWard) return false;
     if (t.list_type === "Casualty") return true;
     return t.planned_date === todayDateStr();
   }).length;
-  const refsPending = state.referrals.filter(function(r){ return !r.completed_at; }).length;
-  const forDischarge = state.beds.filter(function(b){ return b.for_discharge; }).length;
+  const refsPending = state.referrals.filter(function(r){ return !r.completed_at && bedIds.indexOf(r.bed_id) !== -1; }).length;
+  const forDischarge = beds.filter(function(b){ return b.for_discharge; }).length;
   return { occupied:occupied, empty:empty, scansPending:scansPending, theatreToday:theatreToday, refsPending:refsPending, forDischarge:forDischarge };
+}
+function updateWardSwitchLabels(){
+  const maleCount = state.beds.filter(function(b){ return b.ward === "Male"; }).length;
+  const femaleCount = state.beds.filter(function(b){ return b.ward === "Female"; }).length;
+  document.getElementById("ws-male-sub").textContent = maleCount + " beds";
+  document.getElementById("ws-female-sub").textContent = femaleCount + " beds";
 }
 function renderWardSummary(){
   const s = computeWardSummary();
@@ -769,7 +811,7 @@ function bedMatchesSearch(bed, term){
 
 function renderWardGrid(){
   const grid = document.getElementById("ward-grid");
-  const beds = state.beds;
+  const beds = currentWardBeds();
   if (beds.length === 0){
     grid.innerHTML = '<p class="empty-state">No beds configured yet. Add beds under Settings &rarr; Ward Layout.</p>';
     return;
@@ -877,6 +919,7 @@ function renderBedWorkspace(){
   document.getElementById("bw-disc-no").className = !bed.for_discharge ? "active-no" : "";
 }
 
+document.getElementById("btn-new-routine-booking").addEventListener("click", openNewRoutineBookingModal);
 document.getElementById("bw-add-scan").addEventListener("click", function(){ openAddScanModal(state.currentBedId); });
 document.getElementById("bw-add-referral").addEventListener("click", function(){ openAddReferralModal(state.currentBedId); });
 document.getElementById("bw-disc-yes").addEventListener("click", function(){ setForDischarge(state.currentBedId, true); });
@@ -974,10 +1017,12 @@ function openAddScanModal(bedId){
 function theatreRowHtml(t, showOpenBed){
   const bed = byId(state.beds, t.bed_id);
   const isRoutine = t.list_type === "Routine";
+  const awaitingAdmission = isRoutine && !t.bed_id;
   const dateInfo = isRoutine ? (t.planned_date === todayDateStr() ? "TODAY" : fmtDate(t.planned_date)) : "";
   return '<div class="item-row" data-theatre-id="'+t.id+'">' +
     '<div class="row-top">' +
-      (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' : '') +
+      (bed ? '<span class="row-bed-tag">Bed '+esc(bed.label)+'</span>' :
+        (awaitingAdmission ? '<span class="row-bed-tag" style="background:var(--orange-bg);color:var(--orange);">AWAITING ADMISSION</span>' : '')) +
       (isRoutine ? '<span class="row-sub" style="font-weight:800;">'+esc(dateInfo)+'</span>' : '') +
     '</div>' +
     '<div class="row-title">'+esc(t.anesthesia_mode)+(t.procedure_note ? " &middot; " + esc(t.procedure_note) : "")+'</div>' +
@@ -990,6 +1035,7 @@ function theatreRowHtml(t, showOpenBed){
 }
 function theatreActionButtons(t){
   if (t.list_type === "Routine"){
+    if (!t.bed_id) return '<button class="btn btn-sm btn-primary th-assign-bed" data-id="'+t.id+'">Assign Bed</button>';
     return '<button class="btn btn-sm btn-success th-complete" data-id="'+t.id+'">Mark Listed / Sent</button>';
   }
   const idx = stageIndex(THEATRE_STAGES, t.stage);
@@ -1017,6 +1063,71 @@ function bindTheatreRowActions(container){
   container.querySelectorAll(".th-edit-anaes").forEach(function(btn){
     btn.addEventListener("click", function(){ openEditAnaesthesiaModal(byId(state.theatreListings, btn.getAttribute("data-id"))); });
   });
+  container.querySelectorAll(".th-assign-bed").forEach(function(btn){
+    btn.addEventListener("click", function(){ openAssignBedModal(btn.getAttribute("data-id")); });
+  });
+}
+function openAssignBedModal(listingId){
+  const listing = byId(state.theatreListings, listingId);
+  if (!listing) return;
+  const emptyBeds = state.beds.filter(function(b){ return b.ward === listing.ward && !b.occupied; })
+    .sort(function(a,b){ return a.label.localeCompare(b.label, undefined, {numeric:true}); });
+  if (emptyBeds.length === 0){
+    openModal("Assign Bed", '<p class="empty-state">No empty beds in the '+esc(listing.ward)+' ward right now.</p>',
+      '<button class="btn" id="ab-cancel">Close</button>');
+    document.getElementById("ab-cancel").onclick = closeModal;
+    return;
+  }
+  const body = '<p class="small muted" style="margin-bottom:10px;">Choose the bed this patient has been admitted to.</p>' +
+    '<div class="bedpicker-grid">' + emptyBeds.map(function(b){
+      return '<div class="bedpick" data-bed-id="'+b.id+'">'+esc(b.label)+'</div>';
+    }).join("") + '</div>';
+  openModal("Assign Bed (" + listing.ward + " ward)", body, '<button class="btn" id="ab-cancel">Cancel</button>');
+  document.getElementById("ab-cancel").onclick = closeModal;
+  document.querySelectorAll(".bedpick").forEach(function(el){
+    el.addEventListener("click", async function(){
+      const bedId = el.getAttribute("data-bed-id");
+      const bedLabel = bedLabelOf(bedId);
+      const bedRes = await DB.update("beds", bedId, { occupied: true, occupied_since: nowIso() });
+      if (bedRes.error){ showToast(friendlyError(bedRes.error), "error"); return; }
+      const listRes = await DB.update("theatre_listings", listingId, { bed_id: bedId, updated_at: nowIso() });
+      if (listRes.error){ showToast(friendlyError(listRes.error), "error"); return; }
+      closeModal();
+      showToast("Bed " + bedLabel + " assigned.", "success");
+      await loadAll();
+      renderCurrentView();
+    });
+  });
+}
+function openNewRoutineBookingModal(){
+  const ward = state.currentWard;
+  const body =
+    '<p class="small muted" style="margin-bottom:10px;">Books a place on the '+esc(ward)+' ward routine list before the patient is admitted — no bed needed yet. Assign a bed once they arrive.</p>' +
+    '<div class="form-group"><label>Planned surgery date *</label><input type="date" id="nrb-date" value="'+todayDateStr()+'"></div>' +
+    '<div class="form-group"><label>Anaesthesia mode</label><select id="nrb-anaes">'+optionsHtml(ANESTHESIA_MODES,"Not decided")+'</select></div>' +
+    '<div class="form-group"><label>Procedure (optional)</label><input type="text" id="nrb-proc" placeholder="e.g. Lap cholecystectomy"></div>';
+  openModal("New Routine Booking (" + ward + " ward, pre-admission)", body,
+    '<button class="btn" id="nrb-cancel">Cancel</button>' +
+    '<button class="btn btn-primary" id="nrb-save">Save booking</button>');
+  document.getElementById("nrb-cancel").onclick = closeModal;
+  document.getElementById("nrb-save").onclick = async function(){
+    const plannedDate = document.getElementById("nrb-date").value;
+    if (!plannedDate){ showToast("Please choose a planned surgery date.", "error"); return; }
+    const res = await DB.insert("theatre_listings", {
+      bed_id: null,
+      ward: ward,
+      list_type: "Routine",
+      planned_date: plannedDate,
+      anesthesia_mode: document.getElementById("nrb-anaes").value,
+      procedure_note: document.getElementById("nrb-proc").value.trim() || null,
+      stage: "Consultant signed"
+    });
+    if (res.error){ showToast(friendlyError(res.error), "error"); return; }
+    closeModal();
+    showToast("Routine booking saved. Assign a bed once the patient is admitted.", "success");
+    await loadAll();
+    renderCurrentView();
+  };
 }
 function openEditAnaesthesiaModal(listing){
   const body =
@@ -1050,7 +1161,7 @@ function openAddTheatreModal(bedId, listType){
   document.getElementById("th-cancel").onclick = closeModal;
   document.getElementById("th-save").onclick = async function(){
     const row = {
-      bed_id: bedId, list_type: listType,
+      bed_id: bedId, list_type: listType, ward: bedWard(bedId),
       anesthesia_mode: document.getElementById("th-anaes").value,
       procedure_note: document.getElementById("th-proc").value.trim() || null,
       stage: isRoutine ? "Consultant signed" : "HO flagged"
@@ -1138,7 +1249,8 @@ function openAddReferralModal(bedId){
 function renderScansView(){
   const isToday = true;
   document.getElementById("scan-banner").className = "info-banner";
-  const open = state.scans.filter(function(s){ return !s.completed_at; })
+  const bedIds = currentWardBeds().map(function(b){ return b.id; });
+  const open = state.scans.filter(function(s){ return !s.completed_at && bedIds.indexOf(s.bed_id) !== -1; })
     .sort(function(a,b){ return stageIndex(SCAN_STAGES,a.stage) - stageIndex(SCAN_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
   const list = document.getElementById("scans-list");
   if (open.length === 0){ list.innerHTML = '<p class="empty-state">No outstanding scan requests.</p>'; return; }
@@ -1177,13 +1289,13 @@ function renderTheatreView(){
     banner.textContent = "Today (" + todayName + ") has no routine list — casualty theatre only.";
   }
 
-  const routine = state.theatreListings.filter(function(t){ return t.list_type === "Routine" && !t.completed_at; })
+  const routine = state.theatreListings.filter(function(t){ return t.list_type === "Routine" && !t.completed_at && t.ward === state.currentWard; })
     .sort(function(a,b){ return new Date(a.planned_date) - new Date(b.planned_date); });
   const routineList = document.getElementById("routine-list");
   routineList.innerHTML = routine.length ? routine.map(function(t){ return theatreRowHtml(t, true); }).join("") : '<p class="empty-state">Nobody is currently on the routine theatre list.</p>';
   bindTheatreRowActions(routineList); bindOpenBedButtons(routineList);
 
-  const casualty = state.theatreListings.filter(function(t){ return t.list_type === "Casualty" && !t.completed_at; })
+  const casualty = state.theatreListings.filter(function(t){ return t.list_type === "Casualty" && !t.completed_at && t.ward === state.currentWard; })
     .sort(function(a,b){ return stageIndex(THEATRE_STAGES,a.stage) - stageIndex(THEATRE_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
   const casualtyList = document.getElementById("casualty-list");
   casualtyList.innerHTML = casualty.length ? casualty.map(function(t){ return theatreRowHtml(t, true); }).join("") : '<p class="empty-state">Nobody is currently flagged for casualty theatre.</p>';
@@ -1194,7 +1306,8 @@ function renderTheatreView(){
 // GLOBAL REFERRALS VIEW
 // ============================================================================
 function renderReferralsView(){
-  const open = state.referrals.filter(function(r){ return !r.completed_at; })
+  const bedIds = currentWardBeds().map(function(b){ return b.id; });
+  const open = state.referrals.filter(function(r){ return !r.completed_at && bedIds.indexOf(r.bed_id) !== -1; })
     .sort(function(a,b){ return stageIndex(REFERRAL_STAGES,a.stage) - stageIndex(REFERRAL_STAGES,b.stage) || new Date(a.created_at)-new Date(b.created_at); });
   const list = document.getElementById("referrals-list");
   if (open.length === 0){ list.innerHTML = '<p class="empty-state">No outstanding referrals.</p>'; return; }
@@ -1216,7 +1329,7 @@ function renderReferralsView(){
 // GLOBAL DISCHARGES VIEW
 // ============================================================================
 function renderDischargesView(){
-  const beds = state.beds.filter(function(b){ return b.for_discharge; });
+  const beds = currentWardBeds().filter(function(b){ return b.for_discharge; });
   const list = document.getElementById("discharges-list");
   if (beds.length === 0){ list.innerHTML = '<p class="empty-state">No beds currently marked for discharge.</p>'; return; }
   list.innerHTML = beds.map(function(b){
@@ -1264,7 +1377,7 @@ function renderSettingsView(){
 }
 function renderLayoutTable(){
   const tbody = document.getElementById("layout-table-body");
-  const beds = state.beds.slice().sort(function(a,b){
+  const beds = currentWardBeds().slice().sort(function(a,b){
     return (a.row_no - b.row_no) || (a.col_no - b.col_no) || a.label.localeCompare(b.label, undefined, {numeric:true});
   });
   tbody.innerHTML = beds.map(function(b){
@@ -1313,6 +1426,7 @@ function switchView(view){
   renderCurrentView();
 }
 function renderCurrentView(){
+  updateWardSwitchLabels();
   switch(state.currentView){
     case "ward": renderWard(); break;
     case "scans": renderScansView(); break;
@@ -1328,6 +1442,22 @@ document.getElementById("main-nav").addEventListener("click", function(e){
   const btn = e.target.closest(".nav-btn");
   if (!btn) return;
   switchView(btn.getAttribute("data-view"));
+});
+document.getElementById("ward-switch").addEventListener("click", function(e){
+  const btn = e.target.closest(".ward-switch-btn");
+  if (!btn) return;
+  const ward = btn.getAttribute("data-ward");
+  if (ward === state.currentWard) return;
+  state.currentWard = ward;
+  document.querySelectorAll("#ward-switch .ward-switch-btn").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-ward") === ward);
+  });
+  state.wardSearch = "";
+  document.getElementById("ward-search").value = "";
+  state.wardFilter = "all";
+  document.getElementById("ward-filter").value = "all";
+  state.currentBedId = null;
+  if (state.currentView === "bed") switchView("ward"); else renderCurrentView();
 });
 document.getElementById("btn-refresh").addEventListener("click", async function(){
   showToast("Refreshing...", "");
